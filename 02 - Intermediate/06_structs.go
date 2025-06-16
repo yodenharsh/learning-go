@@ -22,6 +22,10 @@ func (p *Person) add1ToAge() {
 	p.age++
 }
 
+func (Person) justLikeThat() {
+	fmt.Println("Just like that. No Person instance needed")
+}
+
 func main() {
 	p := Person{firstName: "John", lastName: "Doe", age: 21, PhoneNumber: PhoneNumber{countryCode: 91, cell: "8689905873"}}
 
