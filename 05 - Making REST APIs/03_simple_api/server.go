@@ -12,6 +12,7 @@ func main() {
 	port := 3000
 
 	http.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
+		logRequestDetails(r)
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -20,6 +21,7 @@ func main() {
 	})
 
 	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+		logRequestDetails(r)
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -49,4 +51,12 @@ func main() {
 	// if err != nil {
 	// 	log.Fatalln("Error starting server:", err)
 	// }
+}
+
+func logRequestDetails(r *http.Request) {
+	httpVersion := r.Proto
+	fmt.Println("Received request with HTTP version: ", httpVersion)
+
+	tlsVersion := r.TLS.Version
+	fmt.Println("TLS version used: ", tlsVersion)
 }
