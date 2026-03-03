@@ -2,14 +2,24 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"golang.org/x/net/http2"
 )
+
+type PersonInfo struct {
+	Age     int    `json:"age"`
+	Country string `json:"country"`
+}
 
 func main() {
 	port := 3000
+
+	people := map[string]PersonInfo{
+		"alice":     {Age: 30, Country: "USA"},
+		"bob":       {Age: 25, Country: "UK"},
+		"Curry boy": {Age: 35, Country: "India"},
+	}
 
 	http.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
 		logRequestDetails(r)
@@ -26,7 +36,25 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		fmt.Fprintf(w, "Handling incoming users")
+
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			http.Error(w, "Missing 'name' query parameter", http.StatusBadRequest)
+			return
+		}
+
+		person, exists := people[name]
+		if !exists {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(person); err != nil {
+			http.Error(w, "Error encoding response", http.StatusInternalServerError)
+			return
+		}
+
 	})
 
 	cert := "cert.pem"
@@ -39,18 +67,11 @@ func main() {
 	server := &http.Server{
 		Addr:      fmt.Sprintf(":%d", port),
 		TLSConfig: tlsConfig,
-		Handler:   nil,
 	}
-
-	http2.ConfigureServer(server, &http2.Server{})
 
 	fmt.Println("Server is running on port", port)
 
 	server.ListenAndServeTLS(cert, key)
-	// err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-	// if err != nil {
-	// 	log.Fatalln("Error starting server:", err)
-	// }
 }
 
 func logRequestDetails(r *http.Request) {
