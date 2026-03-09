@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"restapi/internal/api/middlewares"
 )
 
 type User struct {
@@ -53,7 +54,12 @@ func main() {
 
 	mux.HandleFunc("/execs/", execsHandler)
 
-	err := http.ListenAndServe(":"+port, mux)
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: middlewares.SecurityHeaders(mux),
+	}
+
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}
