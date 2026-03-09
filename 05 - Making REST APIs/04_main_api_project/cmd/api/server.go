@@ -78,6 +78,10 @@ func teachersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func studentsHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Query params: ", r.URL.Query())
+	sortBy := r.URL.Query().Get("sortby")
+	fmt.Println("Sort by: ", sortBy)
+
 	w.Write([]byte("Placeholder for students route"))
 }
 
