@@ -55,8 +55,9 @@ func main() {
 	mux.HandleFunc("/execs/", execsHandler)
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: middlewares.SecurityHeaders(mux),
+		Addr: fmt.Sprintf(":%s", port),
+		// Handler: middlewares.SecurityHeaders(mux),
+		Handler: middlewares.Cors(mux),
 	}
 
 	err := server.ListenAndServe()
