@@ -57,7 +57,10 @@ func main() {
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%s", port),
 		// Handler: middlewares.SecurityHeaders(mux),
-		Handler: mw.ResponseTimeMiddleware(mw.SecurityHeaders(mw.Cors(mux))),
+		Handler: mw.ResponseTimeMiddleware(
+			mw.Compression(
+				mw.SecurityHeaders(
+					mw.Cors(mux)))),
 	}
 
 	err := server.ListenAndServe()
