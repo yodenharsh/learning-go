@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	mw "restapi/internal/api/middlewares"
+	"time"
 )
 
 type User struct {
@@ -54,13 +55,15 @@ func main() {
 
 	mux.HandleFunc("/execs/", execsHandler)
 
+	rl := mw.NewRateLimiter(5, time.Minute)
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%s", port),
 		// Handler: middlewares.SecurityHeaders(mux),
-		Handler: mw.ResponseTimeMiddleware(
-			mw.Compression(
-				mw.SecurityHeaders(
-					mw.Cors(mux)))),
+		Handler: rl.RateLimitingMiddleware(
+			mw.ResponseTimeMiddleware(
+				mw.Compression(
+					mw.SecurityHeaders(
+						mw.Cors(mux))))),
 	}
 
 	err := server.ListenAndServe()
