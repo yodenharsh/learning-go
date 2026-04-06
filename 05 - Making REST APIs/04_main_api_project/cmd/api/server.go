@@ -76,14 +76,15 @@ func main() {
 	mux.HandleFunc("/execs/", execsHandler)
 
 	rl := mw.NewRateLimiter(5, time.Minute)
-	secureMux := rl.RateLimitingMiddleware(
-		mw.ResponseTimeMiddleware(
-			mw.Compression(
-				mw.SecurityHeaders(
-					mw.Cors(mux)))))
+
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: mw.Hpp(hppOptions)(secureMux),
+		Addr: fmt.Sprintf(":%s", port),
+		Handler: mw.Cors(
+			rl.RateLimitingMiddleware(
+				mw.ResponseTimeMiddleware(
+					mw.SecurityHeaders(
+						mw.Compression(
+							mw.Hpp(hppOptions)(mux)))))),
 	}
 
 	err := server.ListenAndServe()
