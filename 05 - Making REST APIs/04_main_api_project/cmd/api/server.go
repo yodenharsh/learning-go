@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-type User struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-	City string `json:"city"`
-}
-
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello root route"))
 }
@@ -77,18 +71,29 @@ func main() {
 
 	rl := mw.NewRateLimiter(5, time.Minute)
 
+	// Middlewares order is first-in first-applied
+	secureMux := applyMiddlewares(mux,
+		mw.Hpp(hppOptions),
+		mw.Compression,
+		mw.SecurityHeaders,
+		mw.ResponseTimeMiddleware,
+		rl.RateLimitingMiddleware,
+		mw.Cors)
+
 	server := &http.Server{
-		Addr: fmt.Sprintf(":%s", port),
-		Handler: mw.Cors(
-			rl.RateLimitingMiddleware(
-				mw.ResponseTimeMiddleware(
-					mw.SecurityHeaders(
-						mw.Compression(
-							mw.Hpp(hppOptions)(mux)))))),
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: secureMux,
 	}
 
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}
+}
+
+func applyMiddlewares(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+	for _, middleware := range middlewares {
+		handler = middleware(handler)
+	}
+	return handler
 }
