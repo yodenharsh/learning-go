@@ -8,20 +8,22 @@ import (
 	mw "restapi/internal/api/middlewares"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Teacher struct {
-	Id        int
-	FirstName string
-	LastName  string
-	Class     string
-	Subject   string
+	Id        int    `json:"id,omitempty"`
+	FirstName string `json:"firstName,omitempty"`
+	LastName  string `json:"lastName,omitempty"`
+	Class     string `json:"class,omitempty"`
+	Subject   string `json:"subject,omitempty"`
 }
 
 var (
 	teachers = make(map[int]Teacher)
 	nextId   = 1
+	mutex    = &sync.Mutex{}
 )
 
 func init() {
@@ -48,6 +50,7 @@ func init() {
 		Class:     "4C",
 		Subject:   "English",
 	}
+	nextId++
 }
 
 func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +102,41 @@ func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func postTeachersHandle(w http.ResponseWriter, r *http.Request) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	var newTeachers []Teacher
+	err := json.NewDecoder(r.Body).Decode(&newTeachers)
+
+	if err != nil {
+		http.Error(w, "error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	addedTeachers := make([]Teacher, len(newTeachers))
+	for i, newTeacher := range newTeachers {
+		newTeacher.Id = nextId
+		teachers[nextId] = newTeacher
+		addedTeachers[i] = newTeacher
+		nextId++
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	response := struct {
+		Status string    `json:"status"`
+		Count  int       `json:"count"`
+		Data   []Teacher `json:"data"`
+	}{
+		Status: "success",
+		Count:  len(addedTeachers),
+		Data:   addedTeachers,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello root route"))
 }
@@ -109,7 +147,7 @@ func teachersHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		getTeachersHandler(w, r)
 	case http.MethodPost:
-		w.Write([]byte("Hello POST Method on Teachers Route"))
+		postTeachersHandle(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
