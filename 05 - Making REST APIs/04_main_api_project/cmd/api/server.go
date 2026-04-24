@@ -4,15 +4,26 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	mw "restapi/internal/api/middlewares"
 	"restapi/internal/api/router"
+	"restapi/internal/repository/sqlconnect"
 	"restapi/pkg/utils"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
 
-	port := "3000"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file:", err)
+	}
+
+	sqlconnect.ConnectDb("test_db")
+
+	port := os.Getenv("API_PORT")
 	fmt.Println("Server is running on port ", port)
 	hppOptions := mw.HPPOptions{
 		CheckQuery:                  true,
@@ -37,7 +48,7 @@ func main() {
 		Handler: secureMux,
 	}
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}
