@@ -21,7 +21,7 @@ func main() {
 		log.Fatal("Error loading .env file:", err)
 	}
 
-	sqlconnect.ConnectDb("test_db")
+	sqlconnect.ConnectDb()
 
 	port := os.Getenv("API_PORT")
 	fmt.Println("Server is running on port ", port)

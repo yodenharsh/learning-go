@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"restapi/internal/models"
+	"restapi/internal/repository/sqlconnect"
 	"strconv"
 	"strings"
 	"sync"
@@ -105,11 +106,19 @@ func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func postTeachersHandle(w http.ResponseWriter, r *http.Request) {
-	mutex.Lock()
-	defer mutex.Unlock()
+
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
+	stmt, err := db.Prepare("INSERT INTO teachers (first_name, last_name, email, class, subject) VALUES (?,?,?,?,?)")
+	if err != nil {
+		http.Error(w, "Error preparing statement", http.StatusInternalServerError)
+		return
+	}
+	defer stmt.Close()
 
 	var newTeachers []models.Teacher
-	err := json.NewDecoder(r.Body).Decode(&newTeachers)
+	err = json.NewDecoder(r.Body).Decode(&newTeachers)
 
 	if err != nil {
 		http.Error(w, "error decoding JSON", http.StatusUnprocessableEntity)
@@ -118,10 +127,21 @@ func postTeachersHandle(w http.ResponseWriter, r *http.Request) {
 
 	addedTeachers := make([]models.Teacher, len(newTeachers))
 	for i, newTeacher := range newTeachers {
-		newTeacher.Id = nextId
-		teachers[nextId] = newTeacher
+		res, err := stmt.Exec(newTeacher.FirstName, newTeacher.LastName, newTeacher.Email, newTeacher.Class, newTeacher.Subject)
+		if err != nil {
+			http.Error(w, "Error inserting teacher into database", http.StatusInternalServerError)
+			return
+		}
+
+		res.LastInsertId()
+		lastId, err := res.LastInsertId()
+		if err != nil {
+			http.Error(w, "Error retrieving last insert ID", http.StatusInternalServerError)
+			return
+		}
+
+		newTeacher.Id = int(lastId)
 		addedTeachers[i] = newTeacher
-		nextId++
 	}
 
 	w.Header().Set("Content-Type", "application/json")
