@@ -69,12 +69,33 @@ func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 		firstName := r.URL.Query().Get("firstName")
 		lastName := r.URL.Query().Get("lastName")
 
+		query := "SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1"
+		var args []any
+
+		if firstName != "" {
+			query += " AND first_name = ?"
+			args = append(args, firstName)
+		}
+		if lastName != "" {
+			query += " AND last_name = ?"
+			args = append(args, lastName)
+		}
+
 		teacherList := make([]models.Teacher, 0, len(teachers))
-		for _, teacher := range teachers {
-			if firstName != "" && teacher.FirstName != firstName {
-				continue
-			} else if lastName != "" && teacher.LastName != lastName {
-				continue
+
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			http.Error(w, "Error querying database", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var teacher models.Teacher
+			err := rows.Scan(&teacher.Id, &teacher.FirstName, &teacher.LastName, &teacher.Email, &teacher.Class, &teacher.Subject)
+			if err != nil {
+				http.Error(w, "Error scanning database result", http.StatusInternalServerError)
+				return
 			}
 			teacherList = append(teacherList, teacher)
 		}
