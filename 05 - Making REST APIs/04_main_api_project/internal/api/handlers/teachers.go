@@ -178,7 +178,8 @@ func postTeachersHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildQueryWithFilters(r *http.Request) (string, []any) {
-	query := "SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1"
+	var query strings.Builder
+	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
 	var args []any
 
 	params := map[string]string{
@@ -192,9 +193,9 @@ func buildQueryWithFilters(r *http.Request) (string, []any) {
 	for param, dbField := range params {
 		value := r.URL.Query().Get(param)
 		if value != "" {
-			query += " AND " + dbField + " = ?"
+			query.WriteString(" AND " + dbField + " = ?")
 			args = append(args, value)
 		}
 	}
-	return query, args
+	return query.String(), args
 }
