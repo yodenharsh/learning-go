@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"restapi/internal/models"
@@ -58,6 +59,9 @@ func TeachersHandler(w http.ResponseWriter, r *http.Request) {
 
 func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
 	path := strings.TrimPrefix(r.URL.Path, "/teachers/")
 	id := strings.TrimPrefix(path, "/")
 
@@ -95,13 +99,19 @@ func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		teachers, exists := teachers[id]
-		if !exists {
+		var teacher models.Teacher
+		err = db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&teacher.Id, &teacher.FirstName, &teacher.LastName, &teacher.Email, &teacher.Class, &teacher.Subject)
+
+		if err == sql.ErrNoRows {
+			http.Error(w, "Teacher not found", http.StatusNotFound)
+			return
+		} else if err != nil {
 			http.Error(w, "Teacher not found", http.StatusNotFound)
 			return
 		}
 
-		json.NewEncoder(w).Encode(teachers)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(teacher)
 	}
 }
 
