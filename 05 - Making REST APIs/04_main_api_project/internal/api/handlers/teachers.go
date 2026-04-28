@@ -62,11 +62,21 @@ func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	db := sqlconnect.ConnectDb()
 	defer db.Close()
 
+	dbParams := map[string]string{
+		"firstName": "first_name",
+		"lastName":  "last_name",
+		"email":     "email",
+		"class":     "class",
+		"subject":   "subject",
+	}
+
 	path := strings.TrimPrefix(r.URL.Path, "/teachers/")
 	id := strings.TrimPrefix(path, "/")
 
 	if id == "" {
-		query, args := buildQueryWithFilters(r)
+		query, args := buildQueryWithFilters(r, dbParams)
+
+		query = buildQueryWithSorting(r, query, dbParams)
 
 		teacherList := make([]models.Teacher, 0, len(teachers))
 
@@ -177,20 +187,12 @@ func postTeachersHandle(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func buildQueryWithFilters(r *http.Request) (string, []any) {
+func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
 	var args []any
 
-	params := map[string]string{
-		"firstName": "first_name",
-		"lastName":  "last_name",
-		"email":     "email",
-		"class":     "class",
-		"subject":   "subject",
-	}
-
-	for param, dbField := range params {
+	for param, dbField := range dbParams {
 		value := r.URL.Query().Get(param)
 		if value != "" {
 			query.WriteString(" AND " + dbField + " = ?")
@@ -198,4 +200,41 @@ func buildQueryWithFilters(r *http.Request) (string, []any) {
 		}
 	}
 	return query.String(), args
+}
+
+func buildQueryWithSorting(r *http.Request, query string, dbParams map[string]string) string {
+	sortParam := r.URL.Query()["sortBy"]
+	if len(sortParam) > 0 {
+		query += " ORDER BY "
+		for i, param := range sortParam {
+			parts := strings.Split(param, ":")
+			if len(parts) != 2 {
+				continue
+			}
+
+			field, order := parts[0], parts[1]
+			if !isValidSortField(field) || !isValidSortOrder(order) {
+				continue
+			}
+			if i > 0 {
+				query += ", "
+			}
+			query += dbParams[field] + " " + order
+		}
+	}
+	return query
+}
+
+func isValidSortField(field string) bool {
+	validFields := []string{"firstName", "lastName", "email", "class", "subject"}
+	for _, validField := range validFields {
+		if field == validField {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidSortOrder(order string) bool {
+	return order == "asc" || order == "desc"
 }
