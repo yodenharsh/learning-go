@@ -191,7 +191,7 @@ func UpdateTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(updatedTeacher)
 }
 
-func PatchTeachersHandler(w http.ResponseWriter, r *http.Request) {
+func PatchTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -250,6 +250,100 @@ func PatchTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(existingTeacher)
+}
+
+func PatchTeachersHandler(w http.ResponseWriter, r *http.Request) {
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
+	var updates []map[string]any
+	err := json.NewDecoder(r.Body).Decode(&updates)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error starting transaction", http.StatusInternalServerError)
+		return
+	}
+
+	for _, update := range updates {
+		stringId, ok := update["id"].(string)
+
+		if !ok {
+			tx.Rollback()
+			http.Error(w, "Invalid or missing teacher ID in update", http.StatusUnprocessableEntity)
+			return
+		}
+
+		id, err := strconv.Atoi(stringId)
+		if err != nil {
+			tx.Rollback()
+			http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
+			return
+		}
+
+		var teacherFromDb models.Teacher
+
+		err = db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).
+			Scan(&teacherFromDb.Id, &teacherFromDb.FirstName, &teacherFromDb.LastName, &teacherFromDb.Email, &teacherFromDb.Class, &teacherFromDb.Subject)
+		if err == sql.ErrNoRows {
+			tx.Rollback()
+			http.Error(w, "Teacher not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			tx.Rollback()
+			http.Error(w, "Error checking teacher existence", http.StatusInternalServerError)
+			return
+		}
+
+		teacherVal := reflect.ValueOf(&teacherFromDb).Elem()
+		teacherType := teacherVal.Type()
+
+		for k, v := range update {
+			if k == "id" {
+				continue
+			}
+
+			for i := 0; i < teacherVal.NumField(); i++ {
+				field := teacherType.Field(i)
+				if field.Tag.Get("json") == k+",omitempty" {
+					if teacherVal.Field(i).CanSet() {
+						fieldVal := teacherVal.Field(i)
+						if fieldVal.CanSet() {
+							val := reflect.ValueOf(v)
+							if val.Type().ConvertibleTo(fieldVal.Type()) {
+								fieldVal.Set(val.Convert(fieldVal.Type()))
+							} else {
+								tx.Rollback()
+								log.Printf("Cannot convert %v to %v", val.Type(), fieldVal.Type())
+							}
+						}
+					}
+				}
+			}
+		}
+
+		_, err = tx.Exec("UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?", teacherFromDb.FirstName, teacherFromDb.LastName, teacherFromDb.Email, teacherFromDb.Class, teacherFromDb.Subject, id)
+		if err != nil {
+			tx.Rollback()
+			log.Println(err)
+			http.Error(w, "Error updating teacher in database", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, "Something went wrong when updating", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func DeleteTeacherHandler(w http.ResponseWriter, r *http.Request) {
