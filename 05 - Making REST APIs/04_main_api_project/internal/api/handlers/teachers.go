@@ -21,6 +21,8 @@ func TeachersHandler(w http.ResponseWriter, r *http.Request) {
 		postTeachersHandle(w, r)
 	case http.MethodPut:
 		updateTeachersHandle(w, r)
+	case http.MethodPatch:
+		patchTeachersHandle(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
@@ -201,6 +203,67 @@ func updateTeachersHandle(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(updatedTeacher)
+}
+
+func patchTeachersHandle(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/teachers/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
+		return
+	}
+
+	var updates map[string]any
+	err = json.NewDecoder(r.Body).Decode(&updates)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
+	type IdHolder struct {
+		id int
+	}
+
+	var existingTeacher models.Teacher
+	err = db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&existingTeacher.Id, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Teacher not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error checking teacher existence", http.StatusInternalServerError)
+		return
+	}
+
+	for k, v := range updates {
+		switch k {
+		case "firstName":
+			existingTeacher.FirstName = v.(string)
+		case "lastName":
+			existingTeacher.LastName = v.(string)
+		case "email":
+			existingTeacher.Email = v.(string)
+		case "class":
+			existingTeacher.Class = v.(string)
+		case "subject":
+			existingTeacher.Subject = v.(string)
+		}
+	}
+
+	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
+	_, err = db.Exec(query, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject, id)
+
+	if err != nil {
+		http.Error(w, "Error updating teacher in database", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(existingTeacher)
 }
 
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
