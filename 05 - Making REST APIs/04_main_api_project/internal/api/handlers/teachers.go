@@ -24,6 +24,8 @@ func TeachersHandler(w http.ResponseWriter, r *http.Request) {
 		updateTeachersHandle(w, r)
 	case http.MethodPatch:
 		patchTeachersHandle(w, r)
+	case http.MethodDelete:
+		deleteTeacherHandler(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
@@ -265,6 +267,38 @@ func patchTeachersHandle(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(existingTeacher)
+}
+
+func deleteTeacherHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/teachers/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
+		return
+	}
+
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
+	query := "DELETE FROM teachers WHERE id = ?"
+	res, err := db.Exec(query, id)
+	if err != nil {
+		http.Error(w, "Error deleting teacher from database", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		http.Error(w, "Error checking deletion result", http.StatusInternalServerError)
+		return
+	}
+	if rowsAffected == 0 {
+		http.Error(w, "Teacher not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
