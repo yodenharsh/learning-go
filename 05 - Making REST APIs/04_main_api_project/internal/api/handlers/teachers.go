@@ -113,7 +113,7 @@ func UpdateTeachersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sqlconnect.UpdateTeacherById(id, updatedTeacher)
+	updatedTeacherFromDb, err := sqlconnect.UpdateTeacherById(id, updatedTeacher)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Teacher not found", http.StatusNotFound)
 		return
@@ -123,7 +123,7 @@ func UpdateTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updatedTeacher)
+	json.NewEncoder(w).Encode(updatedTeacherFromDb)
 }
 
 func PatchTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
@@ -143,42 +143,11 @@ func PatchTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := sqlconnect.ConnectDb()
-	defer db.Close()
-
-	type IdHolder struct {
-		id int
-	}
-
-	var existingTeacher models.Teacher
-	err = db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&existingTeacher.Id, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject)
+	existingTeacher, err := sqlconnect.PatchTeacherById(id, updates)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Teacher not found", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, "Error checking teacher existence", http.StatusInternalServerError)
-		return
-	}
-
-	teacherVal := reflect.ValueOf(&existingTeacher).Elem()
-	teacherType := teacherVal.Type()
-
-	for k, v := range updates {
-		for i := 0; i < teacherVal.NumField(); i++ {
-			field := teacherType.Field(i)
-			if field.Tag.Get("json") == k+",omitempty" {
-				if teacherVal.Field(i).CanSet() {
-					fieldVal := teacherVal.Field(i)
-					fieldVal.Set(reflect.ValueOf(v).Convert(teacherVal.Field(i).Type()))
-				}
-			}
-		}
-	}
-
-	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
-	_, err = db.Exec(query, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject, id)
-
-	if err != nil {
 		http.Error(w, "Error updating teacher in database", http.StatusInternalServerError)
 		return
 	}

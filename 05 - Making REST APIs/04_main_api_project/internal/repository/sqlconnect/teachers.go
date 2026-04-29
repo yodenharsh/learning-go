@@ -2,6 +2,7 @@ package sqlconnect
 
 import (
 	"net/http"
+	"reflect"
 	"restapi/internal/models"
 	"slices"
 	"strings"
@@ -73,7 +74,7 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 	return addedTeachers, nil
 }
 
-func UpdateTeacherById(id int, updatedTeacher models.Teacher) error {
+func UpdateTeacherById(id int, updatedTeacher models.Teacher) (models.Teacher, error) {
 	db := ConnectDb()
 	defer db.Close()
 
@@ -84,16 +85,46 @@ func UpdateTeacherById(id int, updatedTeacher models.Teacher) error {
 	var existingTeacherId IdHolder
 	err := db.QueryRow("SELECT id FROM teachers WHERE id = ?", id).Scan(&existingTeacherId.id)
 	if err != nil {
-		return err
+		return models.Teacher{}, err
 	}
 
 	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
 	_, err = db.Exec(query, &updatedTeacher.FirstName, &updatedTeacher.LastName, &updatedTeacher.Email, &updatedTeacher.Class, &updatedTeacher.Subject, id)
 
 	if err != nil {
-		return err
+		return models.Teacher{}, err
 	}
-	return nil
+	return updatedTeacher, nil
+}
+
+func PatchTeacherById(id int, updates map[string]any) (models.Teacher, error) {
+	db := ConnectDb()
+	defer db.Close()
+
+	var existingTeacher models.Teacher
+	err := db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&existingTeacher.Id, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject)
+	if err != nil {
+		return models.Teacher{}, err
+	}
+
+	teacherVal := reflect.ValueOf(&existingTeacher).Elem()
+	teacherType := teacherVal.Type()
+
+	for k, v := range updates {
+		for i := 0; i < teacherVal.NumField(); i++ {
+			field := teacherType.Field(i)
+			if field.Tag.Get("json") == k+",omitempty" {
+				if teacherVal.Field(i).CanSet() {
+					fieldVal := teacherVal.Field(i)
+					fieldVal.Set(reflect.ValueOf(v).Convert(teacherVal.Field(i).Type()))
+				}
+			}
+		}
+	}
+
+	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
+	_, err = db.Exec(query, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject, id)
+	return existingTeacher, err
 }
 
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
