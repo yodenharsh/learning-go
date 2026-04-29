@@ -3,46 +3,14 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"restapi/internal/models"
 	"restapi/internal/repository/sqlconnect"
+	"slices"
 	"strconv"
 	"strings"
-	"sync"
 )
-
-var (
-	teachers = make(map[int]models.Teacher)
-	nextId   = 1
-	mutex    = &sync.Mutex{}
-)
-
-func init() {
-	teachers[nextId] = models.Teacher{
-		Id:        nextId,
-		FirstName: "John",
-		LastName:  "Doe",
-		Class:     "10A",
-		Subject:   "Math",
-	}
-	nextId++
-	teachers[nextId] = models.Teacher{
-		Id:        nextId,
-		FirstName: "Jane",
-		LastName:  "Smith",
-		Class:     "10B",
-		Subject:   "Science",
-	}
-	nextId++
-	teachers[nextId] = models.Teacher{
-		Id:        nextId,
-		FirstName: "Jane",
-		LastName:  "Doe",
-		Class:     "4C",
-		Subject:   "English",
-	}
-	nextId++
-}
 
 func TeachersHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -51,6 +19,8 @@ func TeachersHandler(w http.ResponseWriter, r *http.Request) {
 		getTeachersHandler(w, r)
 	case http.MethodPost:
 		postTeachersHandle(w, r)
+	case http.MethodPut:
+		updateTeachersHandle(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
@@ -78,7 +48,7 @@ func getTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
 		query = buildQueryWithSorting(r, query, dbParams)
 
-		teacherList := make([]models.Teacher, 0, len(teachers))
+		teacherList := make([]models.Teacher, 0)
 
 		rows, err := db.Query(query, args...)
 		if err != nil {
@@ -187,6 +157,52 @@ func postTeachersHandle(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func updateTeachersHandle(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/teachers/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
+		return
+	}
+
+	var updatedTeacher models.Teacher
+	err = json.NewDecoder(r.Body).Decode(&updatedTeacher)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
+	type IdHolder struct {
+		id int
+	}
+
+	var existingTeacherId IdHolder
+	err = db.QueryRow("SELECT id FROM teachers WHERE id = ?", id).Scan(&existingTeacherId.id)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Teacher not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error checking teacher existence", http.StatusInternalServerError)
+		return
+	}
+
+	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
+	_, err = db.Exec(query, &updatedTeacher.FirstName, &updatedTeacher.LastName, &updatedTeacher.Email, &updatedTeacher.Class, &updatedTeacher.Subject, id)
+
+	if err != nil {
+		http.Error(w, "Error updating teacher in database", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updatedTeacher)
+}
+
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
@@ -227,12 +243,7 @@ func buildQueryWithSorting(r *http.Request, query string, dbParams map[string]st
 
 func isValidSortField(field string) bool {
 	validFields := []string{"firstName", "lastName", "email", "class", "subject"}
-	for _, validField := range validFields {
-		if field == validField {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validFields, field)
 }
 
 func isValidSortOrder(order string) bool {
