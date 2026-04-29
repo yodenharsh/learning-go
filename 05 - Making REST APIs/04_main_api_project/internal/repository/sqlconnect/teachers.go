@@ -73,6 +73,29 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 	return addedTeachers, nil
 }
 
+func UpdateTeacherById(id int, updatedTeacher models.Teacher) error {
+	db := ConnectDb()
+	defer db.Close()
+
+	type IdHolder struct {
+		id int
+	}
+
+	var existingTeacherId IdHolder
+	err := db.QueryRow("SELECT id FROM teachers WHERE id = ?", id).Scan(&existingTeacherId.id)
+	if err != nil {
+		return err
+	}
+
+	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
+	_, err = db.Exec(query, &updatedTeacher.FirstName, &updatedTeacher.LastName, &updatedTeacher.Email, &updatedTeacher.Class, &updatedTeacher.Subject, id)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")

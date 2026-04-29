@@ -113,28 +113,12 @@ func UpdateTeachersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := sqlconnect.ConnectDb()
-	defer db.Close()
-
-	type IdHolder struct {
-		id int
-	}
-
-	var existingTeacherId IdHolder
-	err = db.QueryRow("SELECT id FROM teachers WHERE id = ?", id).Scan(&existingTeacherId.id)
+	err = sqlconnect.UpdateTeacherById(id, updatedTeacher)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Teacher not found", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, "Error checking teacher existence", http.StatusInternalServerError)
-		return
-	}
-
-	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
-	_, err = db.Exec(query, &updatedTeacher.FirstName, &updatedTeacher.LastName, &updatedTeacher.Email, &updatedTeacher.Class, &updatedTeacher.Subject, id)
-
-	if err != nil {
-		http.Error(w, "Error updating teacher in database", http.StatusInternalServerError)
+		http.Error(w, "Error updating teacher", http.StatusInternalServerError)
 		return
 	}
 
