@@ -2,10 +2,13 @@ package sqlconnect
 
 import (
 	"database/sql"
+	"errors"
+	"log"
 	"net/http"
 	"reflect"
 	"restapi/internal/models"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -126,6 +129,123 @@ func PatchTeacherById(id int, updates map[string]any) (models.Teacher, error) {
 	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
 	_, err = db.Exec(query, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject, id)
 	return existingTeacher, err
+}
+
+func PatchTeachers(updates []map[string]any) error {
+	db := ConnectDb()
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	for _, update := range updates {
+		stringId, ok := update["id"].(string)
+
+		if !ok {
+			tx.Rollback()
+			return errors.New("Invalid or missing teacher ID")
+		}
+
+		id, err := strconv.Atoi(stringId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		var teacherFromDb models.Teacher
+
+		err = db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).
+			Scan(&teacherFromDb.Id, &teacherFromDb.FirstName, &teacherFromDb.LastName, &teacherFromDb.Email, &teacherFromDb.Class, &teacherFromDb.Subject)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		teacherVal := reflect.ValueOf(&teacherFromDb).Elem()
+		teacherType := teacherVal.Type()
+
+		for k, v := range update {
+			if k == "id" {
+				continue
+			}
+
+			for i := 0; i < teacherVal.NumField(); i++ {
+				field := teacherType.Field(i)
+				if field.Tag.Get("json") == k+",omitempty" {
+					if teacherVal.Field(i).CanSet() {
+						fieldVal := teacherVal.Field(i)
+						if fieldVal.CanSet() {
+							val := reflect.ValueOf(v)
+							if val.Type().ConvertibleTo(fieldVal.Type()) {
+								fieldVal.Set(val.Convert(fieldVal.Type()))
+							} else {
+								tx.Rollback()
+								log.Printf("Cannot convert %v to %v", val.Type(), fieldVal.Type())
+								return errors.New("Error updating teacher in database")
+							}
+						}
+					}
+				}
+			}
+		}
+		_, err = tx.Exec("UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?", teacherFromDb.FirstName, teacherFromDb.LastName, teacherFromDb.Email, teacherFromDb.Class, teacherFromDb.Subject, id)
+		if err != nil {
+			tx.Rollback()
+			log.Println(err)
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteTeachers(ids []int) ([]int, error) {
+	db := ConnectDb()
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	deletedIds := []int{}
+	for _, id := range ids {
+		execStmt, err := tx.Prepare("DELETE FROM teachers WHERE id = ?")
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			return nil, err
+		}
+		defer execStmt.Close()
+
+		result, err := execStmt.Exec(id)
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			return nil, err
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			return nil, err
+		}
+		if rowsAffected > 0 {
+			deletedIds = append(deletedIds, id)
+		}
+
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return deletedIds, nil
 }
 
 func DeleteTeacherById(id int) error {
