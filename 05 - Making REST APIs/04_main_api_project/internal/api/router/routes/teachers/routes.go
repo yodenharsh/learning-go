@@ -12,5 +12,6 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /teachers/{id}", handlers.UpdateTeachersHandler)
 	mux.HandleFunc("PATCH /teachers", handlers.PatchTeachersHandler)
 	mux.HandleFunc("PATCH /teachers/{id}", handlers.PatchTeacherByIdHandler)
-	mux.HandleFunc("DELETE /teachers/{id}", handlers.DeleteTeacherHandler)
+	mux.HandleFunc("DELETE /teachers/{id}", handlers.DeleteTeacherByIdHandler)
+	mux.HandleFunc("DELETE /teachers", handlers.DeleteTeachersHandler)
 }

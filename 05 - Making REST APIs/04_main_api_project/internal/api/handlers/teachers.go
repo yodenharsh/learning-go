@@ -346,7 +346,7 @@ func PatchTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteTeacherHandler(w http.ResponseWriter, r *http.Request) {
+func DeleteTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -378,6 +378,78 @@ func DeleteTeacherHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func DeleteTeachersHandler(w http.ResponseWriter, r *http.Request) {
+	db := sqlconnect.ConnectDb()
+	defer db.Close()
+
+	var ids []int
+	err := json.NewDecoder(r.Body).Decode(&ids)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error starting transaction", http.StatusInternalServerError)
+		return
+	}
+
+	deletedIds := []int{}
+	for _, id := range ids {
+		execStmt, err := tx.Prepare("DELETE FROM teachers WHERE id = ?")
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			http.Error(w, "Error preparing delete statement", http.StatusInternalServerError)
+			return
+		}
+		defer execStmt.Close()
+
+		result, err := execStmt.Exec(id)
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			http.Error(w, "Error deleting teacher from database", http.StatusInternalServerError)
+			return
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			http.Error(w, "Error checking deletion result", http.StatusInternalServerError)
+			return
+		}
+		if rowsAffected > 0 {
+			deletedIds = append(deletedIds, id)
+		}
+
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	if len(deletedIds) < 1 {
+		http.Error(w, "No teachers found for the provided IDs", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status     string `json:"status"`
+		DeletedIds []int  `json:"deletedIds"`
+	}{
+		Status:     "success",
+		DeletedIds: deletedIds,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
