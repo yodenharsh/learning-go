@@ -8,9 +8,7 @@ import (
 	"reflect"
 	"restapi/internal/models"
 	"restapi/internal/repository/sqlconnect"
-	"slices"
 	"strconv"
-	"strings"
 )
 
 func GetTeachersHandler(w http.ResponseWriter, r *http.Request) {
@@ -23,13 +21,7 @@ func GetTeachersHandler(w http.ResponseWriter, r *http.Request) {
 		"subject":   "subject",
 	}
 
-	query, args := buildQueryWithFilters(r, dbParams)
-
-	query = buildQueryWithSorting(r, query, dbParams)
-
-	teacherList := make([]models.Teacher, 0)
-
-	teacherList, err := sqlconnect.GetTeachers(query, args, teacherList)
+	teacherList, err := sqlconnect.GetTeachers(dbParams, r)
 	if err != nil {
 		http.Error(w, "Error retrieving teachers", http.StatusInternalServerError)
 		return
@@ -59,12 +51,7 @@ func GetTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := sqlconnect.ConnectDb()
-	defer db.Close()
-
-	var teacher models.Teacher
-	err = db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&teacher.Id, &teacher.FirstName, &teacher.LastName, &teacher.Email, &teacher.Class, &teacher.Subject)
-
+	teacher, err := sqlconnect.GetTeacherById(id)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Teacher not found", http.StatusNotFound)
 		return
@@ -435,51 +422,4 @@ func DeleteTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response)
-}
-
-func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
-	var query strings.Builder
-	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
-	var args []any
-
-	for param, dbField := range dbParams {
-		value := r.URL.Query().Get(param)
-		if value != "" {
-			query.WriteString(" AND " + dbField + " = ?")
-			args = append(args, value)
-		}
-	}
-	return query.String(), args
-}
-
-func buildQueryWithSorting(r *http.Request, query string, dbParams map[string]string) string {
-	sortParam := r.URL.Query()["sortBy"]
-	if len(sortParam) > 0 {
-		query += " ORDER BY "
-		for i, param := range sortParam {
-			parts := strings.Split(param, ":")
-			if len(parts) != 2 {
-				continue
-			}
-
-			field, order := parts[0], parts[1]
-			if !isValidSortField(field) || !isValidSortOrder(order) {
-				continue
-			}
-			if i > 0 {
-				query += ", "
-			}
-			query += dbParams[field] + " " + order
-		}
-	}
-	return query
-}
-
-func isValidSortField(field string) bool {
-	validFields := []string{"firstName", "lastName", "email", "class", "subject"}
-	return slices.Contains(validFields, field)
-}
-
-func isValidSortOrder(order string) bool {
-	return order == "asc" || order == "desc"
 }
