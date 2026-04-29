@@ -15,9 +15,6 @@ import (
 
 func GetTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
-	db := sqlconnect.ConnectDb()
-	defer db.Close()
-
 	dbParams := map[string]string{
 		"firstName": "first_name",
 		"lastName":  "last_name",
@@ -32,21 +29,10 @@ func GetTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
 	teacherList := make([]models.Teacher, 0)
 
-	rows, err := db.Query(query, args...)
+	teacherList, err := sqlconnect.GetTeachers(query, args, teacherList)
 	if err != nil {
-		http.Error(w, "Error querying database", http.StatusInternalServerError)
+		http.Error(w, "Error retrieving teachers", http.StatusInternalServerError)
 		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var teacher models.Teacher
-		err := rows.Scan(&teacher.Id, &teacher.FirstName, &teacher.LastName, &teacher.Email, &teacher.Class, &teacher.Subject)
-		if err != nil {
-			http.Error(w, "Error scanning database result", http.StatusInternalServerError)
-			return
-		}
-		teacherList = append(teacherList, teacher)
 	}
 
 	response := struct {
@@ -450,6 +436,7 @@ func DeleteTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
