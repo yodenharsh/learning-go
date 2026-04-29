@@ -44,6 +44,35 @@ func GetTeacherById(id int) (models.Teacher, error) {
 	return teacher, nil
 }
 
+func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
+	db := ConnectDb()
+	defer db.Close()
+
+	stmt, err := db.Prepare("INSERT INTO teachers (first_name, last_name, email, class, subject) VALUES (?,?,?,?,?)")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	addedTeachers := make([]models.Teacher, len(newTeachers))
+	for i, newTeacher := range newTeachers {
+		res, err := stmt.Exec(newTeacher.FirstName, newTeacher.LastName, newTeacher.Email, newTeacher.Class, newTeacher.Subject)
+		if err != nil {
+			return nil, err
+		}
+
+		res.LastInsertId()
+		lastId, err := res.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+
+		newTeacher.Id = int(lastId)
+		addedTeachers[i] = newTeacher
+	}
+	return addedTeachers, nil
+}
+
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
 	query.WriteString("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1")
