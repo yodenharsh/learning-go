@@ -259,23 +259,13 @@ func DeleteTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := sqlconnect.ConnectDb()
-	defer db.Close()
-
-	query := "DELETE FROM teachers WHERE id = ?"
-	res, err := db.Exec(query, id)
-	if err != nil {
-		http.Error(w, "Error deleting teacher from database", http.StatusInternalServerError)
-		return
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		http.Error(w, "Error checking deletion result", http.StatusInternalServerError)
-		return
-	}
-	if rowsAffected == 0 {
+	err = sqlconnect.DeleteTeacherById(id)
+	if err == sql.ErrNoRows {
 		http.Error(w, "Teacher not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Fatalln(err)
+		http.Error(w, "Error deleting teacher", http.StatusInternalServerError)
 		return
 	}
 

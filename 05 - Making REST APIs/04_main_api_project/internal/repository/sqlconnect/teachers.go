@@ -1,6 +1,7 @@
 package sqlconnect
 
 import (
+	"database/sql"
 	"net/http"
 	"reflect"
 	"restapi/internal/models"
@@ -125,6 +126,26 @@ func PatchTeacherById(id int, updates map[string]any) (models.Teacher, error) {
 	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
 	_, err = db.Exec(query, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject, id)
 	return existingTeacher, err
+}
+
+func DeleteTeacherById(id int) error {
+	db := ConnectDb()
+	defer db.Close()
+
+	query := "DELETE FROM teachers WHERE id = ?"
+	res, err := db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func buildQueryWithFilters(r *http.Request, dbParams map[string]string) (string, []any) {
