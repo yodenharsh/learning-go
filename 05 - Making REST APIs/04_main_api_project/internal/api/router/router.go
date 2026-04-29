@@ -2,20 +2,20 @@ package router
 
 import (
 	"net/http"
-	"restapi/internal/api/handlers"
+	execsRoutes "restapi/internal/api/router/routes/execs"
+	rootRoutes "restapi/internal/api/router/routes/root"
+	studentsRoutes "restapi/internal/api/router/routes/students"
+	teachersRoutes "restapi/internal/api/router/routes/teachers"
 )
 
 func Router() *http.ServeMux {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", handlers.RootHandler)
-
-	mux.HandleFunc("/teachers/", handlers.TeachersHandler)
-
-	mux.HandleFunc("/students/", handlers.StudentsHandler)
-
-	mux.HandleFunc("/execs/", handlers.ExecsHandler)
+	rootRoutes.Register(mux)
+	teachersRoutes.Register(mux)
+	studentsRoutes.Register(mux)
+	execsRoutes.Register(mux)
 
 	return mux
 }
