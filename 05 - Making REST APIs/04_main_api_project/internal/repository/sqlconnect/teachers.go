@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"restapi/internal/models"
+	"restapi/pkg/utils"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ func GetTeachers(dbParams map[string]string, r *http.Request) ([]models.Teacher,
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, utils.ErrorHandler(err, "Error querying DB")
 	}
 	defer rows.Close()
 
@@ -30,7 +31,7 @@ func GetTeachers(dbParams map[string]string, r *http.Request) ([]models.Teacher,
 		var teacher models.Teacher
 		err := rows.Scan(&teacher.Id, &teacher.FirstName, &teacher.LastName, &teacher.Email, &teacher.Class, &teacher.Subject)
 		if err != nil {
-			return nil, err
+			return nil, utils.ErrorHandler(err, "Scan row failed")
 		}
 		teacherList = append(teacherList, teacher)
 	}
@@ -44,7 +45,7 @@ func GetTeacherById(id int) (models.Teacher, error) {
 	var teacher models.Teacher
 	err := db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&teacher.Id, &teacher.FirstName, &teacher.LastName, &teacher.Email, &teacher.Class, &teacher.Subject)
 	if err != nil {
-		return models.Teacher{}, err
+		return models.Teacher{}, utils.ErrorHandler(err, "Querying teachers failed")
 	}
 	return teacher, nil
 }
@@ -55,7 +56,7 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 
 	stmt, err := db.Prepare("INSERT INTO teachers (first_name, last_name, email, class, subject) VALUES (?,?,?,?,?)")
 	if err != nil {
-		return nil, err
+		return nil, utils.ErrorHandler(err, "Preparing insert stmt failde")
 	}
 	defer stmt.Close()
 
@@ -63,13 +64,13 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 	for i, newTeacher := range newTeachers {
 		res, err := stmt.Exec(newTeacher.FirstName, newTeacher.LastName, newTeacher.Email, newTeacher.Class, newTeacher.Subject)
 		if err != nil {
-			return nil, err
+			return nil, utils.ErrorHandler(err, "Failed to add teacher")
 		}
 
 		res.LastInsertId()
 		lastId, err := res.LastInsertId()
 		if err != nil {
-			return nil, err
+			return nil, utils.ErrorHandler(err, "Failed to check last inserted ID")
 		}
 
 		newTeacher.Id = int(lastId)
@@ -89,14 +90,14 @@ func UpdateTeacherById(id int, updatedTeacher models.Teacher) (models.Teacher, e
 	var existingTeacherId IdHolder
 	err := db.QueryRow("SELECT id FROM teachers WHERE id = ?", id).Scan(&existingTeacherId.id)
 	if err != nil {
-		return models.Teacher{}, err
+		return models.Teacher{}, utils.ErrorHandler(err, "Error when querying for existing ID")
 	}
 
 	query := "UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?"
 	_, err = db.Exec(query, &updatedTeacher.FirstName, &updatedTeacher.LastName, &updatedTeacher.Email, &updatedTeacher.Class, &updatedTeacher.Subject, id)
 
 	if err != nil {
-		return models.Teacher{}, err
+		return models.Teacher{}, utils.ErrorHandler(err, "Failed to update teacher")
 	}
 	return updatedTeacher, nil
 }
@@ -108,7 +109,7 @@ func PatchTeacherById(id int, updates map[string]any) (models.Teacher, error) {
 	var existingTeacher models.Teacher
 	err := db.QueryRow("SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE id = ?", id).Scan(&existingTeacher.Id, &existingTeacher.FirstName, &existingTeacher.LastName, &existingTeacher.Email, &existingTeacher.Class, &existingTeacher.Subject)
 	if err != nil {
-		return models.Teacher{}, err
+		return models.Teacher{}, utils.ErrorHandler(err, "Failed to do existing check")
 	}
 
 	teacherVal := reflect.ValueOf(&existingTeacher).Elem()
@@ -136,8 +137,7 @@ func PatchTeachers(updates []map[string]any) error {
 	defer db.Close()
 	tx, err := db.Begin()
 	if err != nil {
-		log.Println(err)
-		return err
+		return utils.ErrorHandler(err, "Failed to start transaction")
 	}
 
 	for _, update := range updates {
@@ -145,7 +145,7 @@ func PatchTeachers(updates []map[string]any) error {
 
 		if !ok {
 			tx.Rollback()
-			return errors.New("Invalid or missing teacher ID")
+			return utils.ErrorHandler(errors.New("Invalid or missing teacher ID"), "Invalid or missing teacher ID")
 		}
 
 		id, err := strconv.Atoi(stringId)
@@ -160,7 +160,7 @@ func PatchTeachers(updates []map[string]any) error {
 			Scan(&teacherFromDb.Id, &teacherFromDb.FirstName, &teacherFromDb.LastName, &teacherFromDb.Email, &teacherFromDb.Class, &teacherFromDb.Subject)
 		if err != nil {
 			tx.Rollback()
-			return err
+			return utils.ErrorHandler(err, "Failed to get existing teachers")
 		}
 		teacherVal := reflect.ValueOf(&teacherFromDb).Elem()
 		teacherType := teacherVal.Type()
@@ -181,8 +181,7 @@ func PatchTeachers(updates []map[string]any) error {
 								fieldVal.Set(val.Convert(fieldVal.Type()))
 							} else {
 								tx.Rollback()
-								log.Printf("Cannot convert %v to %v", val.Type(), fieldVal.Type())
-								return errors.New("Error updating teacher in database")
+								return utils.ErrorHandler(errors.New("Error updating teacher in database"), "Error updating teacher in database")
 							}
 						}
 					}
@@ -192,14 +191,13 @@ func PatchTeachers(updates []map[string]any) error {
 		_, err = tx.Exec("UPDATE teachers SET first_name = ?, last_name = ?, email = ?, class = ?, subject = ? WHERE id = ?", teacherFromDb.FirstName, teacherFromDb.LastName, teacherFromDb.Email, teacherFromDb.Class, teacherFromDb.Subject, id)
 		if err != nil {
 			tx.Rollback()
-			log.Println(err)
-			return err
+			return utils.ErrorHandler(err, "Error updating teacher in database")
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return utils.ErrorHandler(err, "Error updating transaction")
 	}
 	return nil
 }
@@ -217,23 +215,20 @@ func DeleteTeachers(ids []int) ([]int, error) {
 	for _, id := range ids {
 		execStmt, err := tx.Prepare("DELETE FROM teachers WHERE id = ?")
 		if err != nil {
-			log.Println(err)
 			tx.Rollback()
-			return nil, err
+			return nil, utils.ErrorHandler(err, "Failed to prepare delete statement")
 		}
 		defer execStmt.Close()
 
 		result, err := execStmt.Exec(id)
 		if err != nil {
-			log.Println(err)
 			tx.Rollback()
-			return nil, err
+			return nil, utils.ErrorHandler(err, "Failed to execute DELETE")
 		}
 		rowsAffected, err := result.RowsAffected()
 		if err != nil {
-			log.Println(err)
 			tx.Rollback()
-			return nil, err
+			return nil, utils.ErrorHandler(err, "Failed to get rows affected")
 		}
 		if rowsAffected > 0 {
 			deletedIds = append(deletedIds, id)
@@ -242,8 +237,7 @@ func DeleteTeachers(ids []int) ([]int, error) {
 	}
 	err = tx.Commit()
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, utils.ErrorHandler(err, "Couldn't commit transaction")
 	}
 	return deletedIds, nil
 }
@@ -255,12 +249,12 @@ func DeleteTeacherById(id int) error {
 	query := "DELETE FROM teachers WHERE id = ?"
 	res, err := db.Exec(query, id)
 	if err != nil {
-		return err
+		return utils.ErrorHandler(err, "Failed to delete teacher")
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return utils.ErrorHandler(err, "Failed to get rows affected")
 	}
 	if rowsAffected == 0 {
 		return sql.ErrNoRows

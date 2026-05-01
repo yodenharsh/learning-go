@@ -68,14 +68,12 @@ func PostTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	var newTeachers []models.Teacher
 	err := json.NewDecoder(r.Body).Decode(&newTeachers)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
 	}
 
 	addedTeachers, err := sqlconnect.AddTeacher(newTeachers)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error adding teachers", http.StatusInternalServerError)
 		return
 	}
@@ -99,7 +97,6 @@ func UpdateTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
 		return
 	}
@@ -107,7 +104,6 @@ func UpdateTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	var updatedTeacher models.Teacher
 	err = json.NewDecoder(r.Body).Decode(&updatedTeacher)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
 	}
@@ -129,7 +125,6 @@ func PatchTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
 		return
 	}
@@ -137,7 +132,6 @@ func PatchTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 	var updates map[string]any
 	err = json.NewDecoder(r.Body).Decode(&updates)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
 	}
@@ -159,7 +153,6 @@ func PatchTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	var updates []map[string]any
 	err := json.NewDecoder(r.Body).Decode(&updates)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
 	}
@@ -169,7 +162,6 @@ func PatchTeachersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "One or more teachers not found", http.StatusNotFound)
 		return
 	} else if err != nil {
-		log.Println(err)
 		http.Error(w, "Error updating teachers in database", http.StatusInternalServerError)
 		return
 	}
@@ -181,7 +173,6 @@ func DeleteTeacherByIdHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Invalid teacher ID", http.StatusUnprocessableEntity)
 		return
 	}
@@ -204,14 +195,12 @@ func DeleteTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	var ids []int
 	err := json.NewDecoder(r.Body).Decode(&ids)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
 	}
 
 	deletedIds, err := sqlconnect.DeleteTeachers(ids)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, "Error deleting teachers", http.StatusInternalServerError)
 		return
 	}
