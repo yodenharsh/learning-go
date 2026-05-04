@@ -3,6 +3,7 @@ package sqlconnect
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"reflect"
@@ -54,7 +55,8 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 	db := ConnectDb()
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO teachers (first_name, last_name, email, class, subject) VALUES (?,?,?,?,?)")
+	fmt.Println(generateInsertQuery(models.Teacher{}))
+	stmt, err := db.Prepare(generateInsertQuery(models.Teacher{}))
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "Preparing insert stmt failde")
 	}
@@ -62,7 +64,8 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 
 	addedTeachers := make([]models.Teacher, len(newTeachers))
 	for i, newTeacher := range newTeachers {
-		res, err := stmt.Exec(newTeacher.FirstName, newTeacher.LastName, newTeacher.Email, newTeacher.Class, newTeacher.Subject)
+		values := getStructValues(newTeacher)
+		res, err := stmt.Exec(values...)
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Failed to add teacher")
 		}
@@ -77,6 +80,41 @@ func AddTeacher(newTeachers []models.Teacher) ([]models.Teacher, error) {
 		addedTeachers[i] = newTeacher
 	}
 	return addedTeachers, nil
+}
+
+func generateInsertQuery(model any) string {
+	modelType := reflect.TypeOf(model)
+	var columns, placeholders string
+
+	for i := 0; i < modelType.NumField(); i++ {
+		dbTag := modelType.Field(i).Tag.Get("db")
+		dbTag = strings.TrimSuffix(dbTag, ",omitempty")
+		if dbTag != "" && dbTag != "id" {
+			if columns != "" {
+				columns += " ," + dbTag
+				placeholders += ",?"
+			} else {
+				columns += dbTag
+				placeholders += "?"
+			}
+		}
+	}
+	return fmt.Sprintf("INSERT INTO teachers (%s) VALUES (%s)", columns, placeholders)
+}
+
+func getStructValues(model any) []any {
+	modelVal := reflect.ValueOf(model)
+	modelType := modelVal.Type()
+	var values []any
+	for i := 0; i < modelType.NumField(); i++ {
+		dbTag := modelType.Field(i).Tag.Get("db")
+		dbTag = strings.TrimSuffix(dbTag, ",omitempty")
+		if dbTag != "" && dbTag != "id" {
+			values = append(values, modelVal.Field(i).Interface())
+		}
+	}
+
+	return values
 }
 
 func UpdateTeacherById(id int, updatedTeacher models.Teacher) (models.Teacher, error) {
