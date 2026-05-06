@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"reflect"
 	"restapi/internal/models"
 	"restapi/internal/repository/sqlconnect"
+	"restapi/pkg/utils"
 	"strconv"
 )
 
@@ -70,6 +72,14 @@ func PostTeachersHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
+	}
+
+	for _, teacher := range newTeachers {
+		val := reflect.ValueOf(teacher)
+		err = utils.CheckStringFieldsNotEmpty(val)
+		if err != nil {
+			http.Error(w, "One or more required fields is empty/not provided", http.StatusBadRequest)
+		}
 	}
 
 	addedTeachers, err := sqlconnect.AddTeacher(newTeachers)
