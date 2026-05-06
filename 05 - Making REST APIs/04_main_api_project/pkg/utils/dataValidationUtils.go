@@ -12,7 +12,7 @@ func CheckStringFieldsNotEmpty(value reflect.Value) error {
 		field := val.Field(i)
 		if field.Kind() == reflect.String && field.String() == "" {
 			fmt.Println("Field name: ", field.Type().Name())
-			return ErrorHandler(errors.New("One or more required fields is empty"), "One or more required fields is empty", 400)
+			return ErrorHandler(errors.New("One or more required fields is empty"), "One or more required fields is empty")
 		}
 	}
 	return nil
