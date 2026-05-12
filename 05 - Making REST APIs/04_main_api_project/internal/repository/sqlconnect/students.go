@@ -10,6 +10,7 @@ import (
 	"restapi/internal/models"
 	"restapi/pkg/utils"
 	"strconv"
+	"strings"
 )
 
 func GetStudents(dbParams map[string]string, r *http.Request) ([]models.Student, error) {
@@ -65,6 +66,9 @@ func AddStudent(newStudents []models.Student) ([]models.Student, error) {
 		values := utils.GetStructValues(newStudent)
 		res, err := stmt.Exec(values...)
 		if err != nil {
+			if strings.Contains(err.Error(), "Error 1452") {
+				return nil, utils.ErrorHandler(err, "Class does not exist")
+			}
 			return nil, utils.ErrorHandler(err, "Failed to add student")
 		}
 
