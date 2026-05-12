@@ -231,3 +231,11 @@ func DeleteTeachersHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
+func GetStudentsOfTeacherHandler(w http.ResponseWriter, r *http.Request) {
+	// todo
+}
+
+func GetStudentCountOfTeacherHandler(w http.ResponseWriter, r *http.Request) {
+	// todo
+}
