@@ -56,7 +56,7 @@ func GetStudentByIdHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Student not found", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, "Student not found", http.StatusNotFound)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 

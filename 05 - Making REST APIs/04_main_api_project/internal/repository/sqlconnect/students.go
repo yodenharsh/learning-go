@@ -42,7 +42,7 @@ func GetStudentById(id int) (models.Student, error) {
 	defer db.Close()
 
 	var student models.Student
-	err := db.QueryRow("SELECT id, first_name, last_name, email, class FROM students WHERE id = ?", id).Scan(&student.Id, &student.FirstName, &student.LastName, &student.Email, &student.Class, &student)
+	err := db.QueryRow("SELECT id, first_name, last_name, email, class FROM students WHERE id = ?", id).Scan(&student.Id, &student.FirstName, &student.LastName, &student.Email, &student.Class)
 	if err != nil {
 		return models.Student{}, utils.ErrorHandler(err, "Querying students failed")
 	}
