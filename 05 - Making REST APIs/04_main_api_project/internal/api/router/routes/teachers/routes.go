@@ -15,6 +15,6 @@ func Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /teachers/{id}", handlers.DeleteTeacherByIdHandler)
 	mux.HandleFunc("DELETE /teachers", handlers.DeleteTeachersHandler)
 
-	mux.HandleFunc("GET /teachers/{id}/students", nil)
-	mux.HandleFunc("GET /teachers/{id}/studentcount", nil)
+	mux.HandleFunc("GET /teachers/{id}/students", handlers.GetStudentsOfTeacherHandler)
+	mux.HandleFunc("GET /teachers/{id}/studentcount", handlers.GetStudentCountOfTeacherHandler)
 }

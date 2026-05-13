@@ -262,3 +262,39 @@ func DeleteTeacherById(id int) error {
 	}
 	return nil
 }
+
+func GetStudentsOfTeacher(teacherId int) ([]models.Student, error) {
+	db := ConnectDb()
+	defer db.Close()
+
+	type IdAndClassHolder struct {
+		Id    int
+		Class string
+	}
+
+	var teacherIdAndClass IdAndClassHolder
+	err := db.QueryRow("SELECT id, class FROM teachers where id = ?", teacherId).Scan(&teacherIdAndClass.Id, &teacherIdAndClass.Class)
+	if err == sql.ErrNoRows {
+		return nil, utils.ErrorHandler(err, "teacher does not exist")
+	} else if err != nil {
+		return nil, utils.ErrorHandler(err, "Error querying teacher")
+	}
+
+	rows, err := db.Query("SELECT id, first_name, last_name, email, class FROM students WHERE class = ?", teacherIdAndClass.Class)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "Error querying students")
+	}
+	defer rows.Close()
+
+	var students []models.Student
+	for rows.Next() {
+		var student models.Student
+		err := rows.Scan(&student.Id, &student.FirstName, &student.LastName, &student.Email, &student.Class)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "Error scanning student row")
+		}
+		students = append(students, student)
+	}
+
+	return students, nil
+}

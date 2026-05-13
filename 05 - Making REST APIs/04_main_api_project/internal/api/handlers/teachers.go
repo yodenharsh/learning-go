@@ -233,7 +233,34 @@ func DeleteTeachersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetStudentsOfTeacherHandler(w http.ResponseWriter, r *http.Request) {
-	// todo
+	teacherId := r.PathValue("id")
+	parsedTeacherId, err := strconv.Atoi(teacherId)
+	if err != nil {
+		http.Error(w, "Passed teacherId is not correct", http.StatusBadRequest)
+		return
+	}
+
+	students, err := sqlconnect.GetStudentsOfTeacher(parsedTeacherId)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Teacher not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error retrieving students of teacher", http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		Status string           `json:"status"`
+		Count  int              `json:"count"`
+		Data   []models.Student `json:"data"`
+	}{
+		Status: "success",
+		Count:  len(students),
+		Data:   students,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetStudentCountOfTeacherHandler(w http.ResponseWriter, r *http.Request) {
