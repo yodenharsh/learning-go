@@ -298,3 +298,29 @@ func GetStudentsOfTeacher(teacherId int) ([]models.Student, error) {
 
 	return students, nil
 }
+
+func GetStudentCountOfTeacher(teacherId int) (int, error) {
+	db := ConnectDb()
+	defer db.Close()
+
+	type IdAndClassHolder struct {
+		Id    int
+		Class string
+	}
+
+	var teacherIdAndClass IdAndClassHolder
+	err := db.QueryRow("SELECT id, class FROM teachers where id = ?", teacherId).Scan(&teacherIdAndClass.Id, &teacherIdAndClass.Class)
+	if err == sql.ErrNoRows {
+		return 0, utils.ErrorHandler(err, "teacher does not exist")
+	} else if err != nil {
+		return 0, utils.ErrorHandler(err, "Error querying teacher")
+	}
+
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM students WHERE class = ?", teacherIdAndClass.Class).Scan(&count)
+	if err != nil {
+		return 0, utils.ErrorHandler(err, "Error counting students of teacher")
+	}
+
+	return count, nil
+}
