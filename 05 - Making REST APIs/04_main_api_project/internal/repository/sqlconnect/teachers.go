@@ -16,7 +16,9 @@ func GetTeachers(dbParams map[string]string, r *http.Request) ([]models.Teacher,
 	db := ConnectDb()
 	defer db.Close()
 	teacherList := make([]models.Teacher, 0)
-	query, args := utils.BuildQueryWithFilters(r, "teachers", dbParams)
+
+	query := "SELECT id, first_name, last_name, email, class, subject FROM teachers WHERE 1=1"
+	query, args := utils.BuildQueryWithFilters(r, query, dbParams)
 
 	query = utils.BuildQueryWithSorting(r, query, dbParams)
 

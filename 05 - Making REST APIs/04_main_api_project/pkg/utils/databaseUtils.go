@@ -43,9 +43,9 @@ func GetStructValues(model any) []any {
 	return values
 }
 
-func BuildQueryWithFilters(r *http.Request, tableName string, dbParams map[string]string) (string, []any) {
+func BuildQueryWithFilters(r *http.Request, initialQuery string, dbParams map[string]string) (string, []any) {
 	var query strings.Builder
-	fmt.Fprintf(&query, "SELECT id, first_name, last_name, email, class, subject FROM %s WHERE 1=1", tableName)
+	query.WriteString(initialQuery)
 
 	var args []any
 
