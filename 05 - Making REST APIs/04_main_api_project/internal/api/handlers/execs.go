@@ -1,25 +1,179 @@
 package handlers
 
 import (
-	"fmt"
+	"database/sql"
+	"encoding/json"
+	"log"
 	"net/http"
+	"reflect"
+	"restapi/internal/models"
+	"restapi/internal/repository/sqlconnect"
+	"restapi/pkg/utils"
+	"strconv"
 )
 
-func ExecsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Placeholder for execs route"))
+func GetExecsHandler(w http.ResponseWriter, r *http.Request) {
+
+	dbParams := map[string]string{
+		"firstName":             "first_name",
+		"lastName":              "last_name",
+		"email":                 "email",
+		"username":              "username",
+		"password":              "password",
+		"inactiveStatus":        "inactive_status",
+		"role":                  "role",
+		"passwordResetCode":     "password_reset_code",
+		"passwordCodeExpiresAt": "password_code_expires_at",
+		"passwordChangedAt":     "password_changed_at",
+		"userCreatedAt":         "user_created_at",
+	}
+
+	execsList, err := sqlconnect.GetExecs(dbParams, r)
+	if err != nil {
+		http.Error(w, "Error retrieving execs", http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		Status string        `json:"status"`
+		Count  int           `json:"count"`
+		Data   []models.Exec `json:"data"`
+	}{
+		Status: "success",
+		Count:  len(execsList),
+		Data:   execsList,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+
+}
+
+func GetExecByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusUnprocessableEntity)
+		return
+	}
+
+	exec, err := sqlconnect.GetExecById(id)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Exec not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(exec)
 }
 
 func PostExecsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Placeholder for execs route"))
-	w.Write([]byte("Hello POST Method on Execs Route"))
-	err := r.ParseForm()
+
+	var execs []models.Exec
+	err := json.NewDecoder(r.Body).Decode(&execs)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wronge when trying to access form values", http.StatusInternalServerError)
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
 		return
 	}
-	formMap := r.Form
-	fmt.Println("formMap:", formMap)
 
-	fmt.Println("Queries: ", r.URL.Query())
+	for _, exec := range execs {
+		val := reflect.ValueOf(exec)
+		err = utils.CheckStringFieldsNotEmpty(val)
+		if err != nil {
+			http.Error(w, "One or more required fields is empty/not provided", http.StatusBadRequest)
+		}
+	}
+
+	addedExecs, err := sqlconnect.AddExec(execs)
+	if err != nil {
+		http.Error(w, "Error adding execs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	response := struct {
+		Status string        `json:"status"`
+		Count  int           `json:"count"`
+		Data   []models.Exec `json:"data"`
+	}{
+		Status: "success",
+		Count:  len(addedExecs),
+		Data:   addedExecs,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func PatchExecByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid exec ID", http.StatusUnprocessableEntity)
+		return
+	}
+
+	var updates map[string]any
+	err = json.NewDecoder(r.Body).Decode(&updates)
+	if err != nil {
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	existingExec, err := sqlconnect.PatchExecById(id, updates)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Exec not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error updating exec in database", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(existingExec)
+}
+
+func PatchExecsHandler(w http.ResponseWriter, r *http.Request) {
+	var updates []map[string]any
+	err := json.NewDecoder(r.Body).Decode(&updates)
+	if err != nil {
+		http.Error(w, "Error decoding JSON", http.StatusUnprocessableEntity)
+		return
+	}
+
+	err = sqlconnect.PatchExecs(updates)
+	if err == sql.ErrNoRows {
+		http.Error(w, "One or more execs not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error updating execs in database", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteExecByIdHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid exec ID", http.StatusUnprocessableEntity)
+		return
+	}
+
+	err = sqlconnect.DeleteExecById(id)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Exec not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Fatalln(err)
+		http.Error(w, "Error deleting exec", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
