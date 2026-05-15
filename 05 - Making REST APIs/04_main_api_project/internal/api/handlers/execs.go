@@ -80,11 +80,18 @@ func PostExecsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, exec := range execs {
+	for idx, exec := range execs {
 		val := reflect.ValueOf(exec)
 		err = utils.CheckStringFieldsNotEmpty(val)
 		if err != nil {
 			http.Error(w, "One or more required fields is empty/not provided", http.StatusBadRequest)
+			return
+		}
+
+		execs[idx].Password, err = utils.HashPassword(exec.Password)
+		if err != nil {
+			http.Error(w, "Error adding data", http.StatusInternalServerError)
+			return
 		}
 	}
 
