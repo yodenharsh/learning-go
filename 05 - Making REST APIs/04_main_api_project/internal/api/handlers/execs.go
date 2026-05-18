@@ -88,7 +88,7 @@ func PostExecsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		execs[idx].Password, err = utils.HashPassword(exec.Password)
+		execs[idx].Password, err = utils.HashAndEncodePassword(exec.Password)
 		if err != nil {
 			http.Error(w, "Error adding data", http.StatusInternalServerError)
 			return
@@ -183,4 +183,43 @@ func DeleteExecByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var req models.Exec
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	}
+	defer r.Body.Close()
+
+	if req.Username == "" || req.Password == "" {
+		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		return
+	}
+
+	execInDb, err := sqlconnect.GetExecByUsername(req.Username)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Incorrect credentials", http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, "Error querying database", http.StatusInternalServerError)
+		return
+	}
+
+	if execInDb.InactiveStatus {
+		http.Error(w, "Account is inactive", http.StatusForbidden)
+	}
+
+	passwordMatch, err := utils.CompareHashedEncodedPassword(execInDb.Password, req.Password)
+	if err != nil {
+		http.Error(w, "Error comparing passwords", http.StatusInternalServerError)
+	}
+
+	if !passwordMatch {
+		http.Error(w, "Incorrect credentials", http.StatusUnauthorized)
+	}
+
+	// TODO: generate a token and construct JWT (or cookie?)
 }
