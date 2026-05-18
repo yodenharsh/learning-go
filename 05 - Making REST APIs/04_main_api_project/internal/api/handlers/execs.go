@@ -221,5 +221,18 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect credentials", http.StatusUnauthorized)
 	}
 
-	// TODO: generate a token and construct JWT (or cookie?)
+	token, err := utils.SignToken(strconv.Itoa(execInDb.Id), execInDb.Username, execInDb.Role)
+	if err != nil {
+		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		return
+	}
+
+	loginResponse := struct {
+		Token string `json:"token"`
+	}{
+		Token: *token,
+	}
+
+	json.NewEncoder(w).Encode(&loginResponse)
+	w.WriteHeader(http.StatusOK)
 }
