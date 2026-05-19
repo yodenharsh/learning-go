@@ -10,6 +10,7 @@ import (
 	"restapi/internal/repository/sqlconnect"
 	"restapi/pkg/utils"
 	"strconv"
+	"time"
 )
 
 func GetExecsHandler(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +234,27 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Token: *token,
 	}
 
-	w.Header().Add("Content-Type", "application/json")
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Bearer",
+		Value:    *token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&loginResponse)
 	w.WriteHeader(http.StatusOK)
+}
+
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Bearer",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+	})
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"message":"Logged out successfully"}`))
 }
