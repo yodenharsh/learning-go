@@ -233,6 +233,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Token: *token,
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&loginResponse)
 	w.WriteHeader(http.StatusOK)
 }
