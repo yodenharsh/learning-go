@@ -3,9 +3,11 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"reflect"
+	"restapi/internal/api/middlewares"
 	"restapi/internal/models"
 	"restapi/internal/repository/sqlconnect"
 	"restapi/pkg/utils"
@@ -211,15 +213,18 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if execInDb.InactiveStatus {
 		http.Error(w, "Account is inactive", http.StatusForbidden)
+		return
 	}
 
 	passwordMatch, err := utils.CompareHashedEncodedPassword(execInDb.Password, req.Password)
 	if err != nil {
 		http.Error(w, "Error comparing passwords", http.StatusInternalServerError)
+		return
 	}
 
 	if !passwordMatch {
 		http.Error(w, "Incorrect credentials", http.StatusUnauthorized)
+		return
 	}
 
 	token, err := utils.SignToken(strconv.Itoa(execInDb.Id), execInDb.Username, execInDb.Role)
@@ -257,4 +262,79 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"message":"Logged out successfully"}`))
+}
+
+func UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("id")
+	parsedIdFromPath, err := strconv.Atoi(idString)
+
+	if err != nil {
+		http.Error(w, "id should be an integer", http.StatusBadRequest)
+		return
+	}
+
+	idFromCookie := r.Context().Value(middlewares.ContextKey("id"))
+	if idFromCookie != idString {
+		fmt.Println("id from cookie ", idFromCookie, "\nParsed ID: ", parsedIdFromPath)
+		http.Error(w, "You can only change your own password", http.StatusUnauthorized)
+		return
+	}
+
+	var updatePasswordRequestBody models.UpdatePasswordRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&updatePasswordRequestBody)
+
+	if err != nil {
+		http.Error(w, "Request body is well-formed", http.StatusBadRequest)
+		return
+	}
+
+	err = utils.CheckStringFieldsNotEmpty(reflect.ValueOf(updatePasswordRequestBody))
+	if err != nil {
+		http.Error(w, "One or more fields is empty", http.StatusBadRequest)
+		return
+	}
+
+	execInDb, err := sqlconnect.GetExecById(parsedIdFromPath)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Exec not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Error querying database", http.StatusInternalServerError)
+		return
+	}
+
+	passwordMatch, err := utils.CompareHashedEncodedPassword(execInDb.Password, updatePasswordRequestBody.Password)
+
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	} else if !passwordMatch {
+		http.Error(w, "Current password doesn't match", http.StatusUnauthorized)
+		return
+	}
+
+	hashedAndEncodedPassword, err := utils.HashAndEncodePassword(updatePasswordRequestBody.NewPassword)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+
+	// Assigning it first to the struct ensures type-safety
+	execInDb.Password = hashedAndEncodedPassword
+	execInDb.PasswordChangedAt = sql.NullString{Valid: true, String: time.Now().String()}
+
+	updatesMap := map[string]any{
+		"password":          execInDb.Password,
+		"passwordChangedAt": execInDb.PasswordChangedAt,
+	}
+
+	_, err = sqlconnect.PatchExecById(parsedIdFromPath, updatesMap)
+	if err != nil {
+		http.Error(w, "Error updating password in database", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

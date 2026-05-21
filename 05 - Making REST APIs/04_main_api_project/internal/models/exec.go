@@ -16,3 +16,9 @@ type Exec struct {
 	PasswordChangedAt     sql.NullString `json:"passwordChangedAt" db:"password_changed_at"`
 	UserCreatedAt         sql.NullString `json:"userCreatedAt" db:"user_created_at"`
 }
+
+type UpdatePasswordRequest struct {
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	NewPassword string `json:"newPassword"`
+}
