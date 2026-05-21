@@ -52,7 +52,7 @@ func BuildQueryWithFilters(r *http.Request, initialQuery string, dbParams map[st
 	for param, dbField := range dbParams {
 		value := r.URL.Query().Get(param)
 		if value != "" {
-			query.WriteString(" AND " + dbField + " = ?")
+			fmt.Fprintf(&query, " AND %s = ?", dbField)
 			args = append(args, value)
 		}
 	}
