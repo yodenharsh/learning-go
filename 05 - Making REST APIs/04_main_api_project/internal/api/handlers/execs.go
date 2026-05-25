@@ -351,6 +351,11 @@ func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	if req.Email == "" {
+		http.Error(w, "email field is empty", http.StatusBadRequest)
+		return
+	}
+
 	execInDb, err := sqlconnect.GetExecByEmail(req.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusNoContent)
