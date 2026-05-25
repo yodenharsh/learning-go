@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -367,7 +369,7 @@ func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Something went wrong when sending email", http.StatusInternalServerError)
 	}
 
-	err = sqlconnect.UpdatePasswordResetCode(execInDb.Id, generatedToken.Value, generatedToken.ExpiresAt.Format(time.RFC3339))
+	err = sqlconnect.UpdatePasswordResetCode(execInDb.Id, generatedToken.HashedValue, generatedToken.ExpiresAt.Format(time.RFC3339))
 	if err != nil {
 		http.Error(w, "Something went wrong when sending email", http.StatusInternalServerError)
 		return
@@ -380,5 +382,71 @@ func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	resetCode := r.PathValue("resetCode")
+	if resetCode == "" {
+		http.Error(w, "Reset code is required", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		NewPassword string `json:"newPassword"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil || req.NewPassword == "" {
+		http.Error(w, "Request body has no newPassword field", http.StatusBadRequest)
+		return
+	}
+
+	bytes, err := hex.DecodeString(resetCode)
+	if err != nil {
+		http.Error(w, "Invalid reset code", http.StatusBadRequest)
+		return
+	}
+	hashedToken := sha256.Sum256(bytes)
+	hashedTokenString := hex.EncodeToString(hashedToken[:])
+
+	execInDb, err := sqlconnect.GetExecByResetCode(hashedTokenString)
+	if err != nil {
+		http.Error(w, "Invalid error code", http.StatusBadRequest)
+		return
+	}
+
+	if !execInDb.PasswordCodeExpiresAt.Valid {
+		http.Error(w, "Reset code has no expiry time, contact support", http.StatusInternalServerError)
+		return
+	}
+
+	expiryTime, err := time.Parse(time.RFC3339, execInDb.PasswordCodeExpiresAt.String)
+	if time.Now().After(expiryTime) {
+		http.Error(w, "Reset code has expired", http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, err := utils.HashAndEncodePassword(req.NewPassword)
+	if err != nil {
+		utils.ErrorHandler(err, "Something went wrong")
+		return
+	}
+
+	execInDb.Password = hashedPassword
+	execInDb.PasswordResetCode = sql.NullString{Valid: false, String: ""}
+	execInDb.PasswordChangedAt = sql.NullString{Valid: true, String: time.Now().String()}
+
+	updatesMap := map[string]any{
+		"password":          execInDb.Password,
+		"passwordResetCode": execInDb.PasswordResetCode,
+		"passwordChangedAt": execInDb.PasswordChangedAt,
+	}
+
+	_, err = sqlconnect.PatchExecById(execInDb.Id, updatesMap)
+	if err != nil {
+		http.Error(w, "Error updating password in database", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

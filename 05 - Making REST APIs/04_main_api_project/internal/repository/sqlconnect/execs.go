@@ -287,3 +287,15 @@ func UpdatePasswordResetCode(id int, resetCode string, expiresAt string) error {
 
 	return nil
 }
+
+func GetExecByResetCode(resetCode string) (models.Exec, error) {
+	db := ConnectDb()
+	defer db.Close()
+
+	var exec models.Exec
+	err := db.QueryRow("SELECT id, first_name, last_name, email, username, password, inactive_status, role, password_reset_code, password_code_expires_at, password_changed_at, user_created_at FROM execs WHERE password_reset_code = ?", resetCode).Scan(&exec.Id, &exec.FirstName, &exec.LastName, &exec.Email, &exec.Username, &exec.Password, &exec.InactiveStatus, &exec.Role, &exec.PasswordResetCode, &exec.PasswordCodeExpiresAt, &exec.PasswordChangedAt, &exec.UserCreatedAt)
+	if err != nil {
+		return models.Exec{}, utils.ErrorHandler(err, "Querying execs failed")
+	}
+	return exec, nil
+}

@@ -16,8 +16,9 @@ import (
 )
 
 type ResetPasswordCode struct {
-	Value     string
-	ExpiresAt time.Time
+	HashedValue string
+	Value       string
+	ExpiresAt   time.Time
 }
 
 func HashAndEncodePassword(originalPassword string) (string, error) {
@@ -83,7 +84,8 @@ func CreatePasswordResetToken() (ResetPasswordCode, error) {
 	hashedTokenString := hex.EncodeToString(hashedToken[:])
 
 	return ResetPasswordCode{
-		Value:     hashedTokenString,
-		ExpiresAt: expiry,
+		Value:       hex.EncodeToString(tokenBytes),
+		HashedValue: hashedTokenString,
+		ExpiresAt:   expiry,
 	}, err
 }
