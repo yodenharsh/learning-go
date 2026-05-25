@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -80,6 +81,25 @@ func BuildQueryWithSorting(r *http.Request, query string, dbParams map[string]st
 		}
 	}
 	return query
+}
+
+func BuildQueryWithPagination(r *http.Request, query string) string {
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("pageSize")
+
+	if pageStr == "" || limitStr == "" {
+		return query
+	}
+
+	page, err1 := strconv.Atoi(pageStr)
+	limit, err2 := strconv.Atoi(limitStr)
+
+	if err1 != nil || err2 != nil || page < 1 || limit < 1 {
+		return query
+	}
+
+	offset := (page - 1) * limit
+	return fmt.Sprintf("%s LIMIT %d OFFSET %d", query, limit, offset)
 }
 
 func isValidSortField(field string) bool {

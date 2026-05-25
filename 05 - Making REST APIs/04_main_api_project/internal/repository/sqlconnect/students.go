@@ -22,6 +22,7 @@ func GetStudents(dbParams map[string]string, r *http.Request) ([]models.Student,
 	query, args := utils.BuildQueryWithFilters(r, query, dbParams)
 
 	query = utils.BuildQueryWithSorting(r, query, dbParams)
+	query = utils.BuildQueryWithPagination(r, query)
 
 	rows, err := db.Query(query, args...)
 	if err != nil {

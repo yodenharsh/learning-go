@@ -29,7 +29,7 @@ func main() {
 		CheckQuery:                  true,
 		CheckBody:                   true,
 		CheckBodyOnlyForContentType: "application/x-www-form-urlencoded",
-		Whitelist:                   []string{"sortBy", "sortOrder", "name", "age", "class", "firstName", "lastName"},
+		Whitelist:                   []string{"sortBy", "sortOrder", "name", "age", "class", "firstName", "lastName", "page", "pageSize"},
 	}
 
 	rl := mw.NewRateLimiter(5, time.Minute)
