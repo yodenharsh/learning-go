@@ -338,3 +338,42 @@ func UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Request body is not well-formed", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	execInDb, err := sqlconnect.GetExecByEmail(req.Email)
+	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	generatedToken, err := utils.CreatePasswordResetToken()
+	if err != nil {
+		http.Error(w, "Something went wrong when sending email", http.StatusInternalServerError)
+	}
+
+	err = sqlconnect.UpdatePasswordResetCode(execInDb.Id, generatedToken.Value, generatedToken.ExpiresAt.Format(time.RFC3339))
+	if err != nil {
+		http.Error(w, "Something went wrong when sending email", http.StatusInternalServerError)
+		return
+	}
+
+	err = utils.SendPasswordResetEmail(generatedToken.Value, req.Email)
+	if err != nil {
+		http.Error(w, "Something went wrong when trying to send email", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -64,6 +64,18 @@ func GetExecByUsername(username string) (models.Exec, error) {
 	return exec, nil
 }
 
+func GetExecByEmail(email string) (models.Exec, error) {
+	db := ConnectDb()
+	defer db.Close()
+
+	var exec models.Exec
+	err := db.QueryRow("SELECT id, first_name, last_name, email, username, password, inactive_status, role, password_reset_code, password_code_expires_at, password_changed_at, user_created_at FROM execs WHERE email = ?", email).Scan(&exec.Id, &exec.FirstName, &exec.LastName, &exec.Email, &exec.Username, &exec.Password, &exec.InactiveStatus, &exec.Role, &exec.PasswordResetCode, &exec.PasswordCodeExpiresAt, &exec.PasswordChangedAt, &exec.UserCreatedAt)
+	if err != nil {
+		return models.Exec{}, utils.ErrorHandler(err, "Querying execs failed")
+	}
+	return exec, nil
+}
+
 func AddExec(newExecs []models.Exec) ([]models.Exec, error) {
 	db := ConnectDb()
 	defer db.Close()
@@ -252,5 +264,26 @@ func DeleteExecById(id int) error {
 	if rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
+	return nil
+}
+
+func UpdatePasswordResetCode(id int, resetCode string, expiresAt string) error {
+	db := ConnectDb()
+	defer db.Close()
+
+	query := "UPDATE execs SET password_reset_code = ?, password_code_expires_at = ? WHERE id = ?"
+	result, err := db.Exec(query, resetCode, expiresAt, id)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "Error when adding password reset code")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return utils.ErrorHandler(err, "Error when adding password reset code")
+	} else if rowsAffected == 0 {
+		return utils.ErrorHandler(err, "Exec with id doesn't exist")
+	}
+
 	return nil
 }

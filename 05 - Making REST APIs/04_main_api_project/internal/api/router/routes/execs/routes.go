@@ -16,8 +16,8 @@ func Register(mux *http.ServeMux) {
 
 	mux.HandleFunc("POST /execs/login", handlers.LoginHandler)
 	mux.HandleFunc("POST /execs/logout", handlers.LogoutHandler)
+	mux.HandleFunc("POST /execs/forgotpassword", handlers.ForgotPasswordHandler)
 	// GetExecsHandler is temporary. Actual handlers need to be implemented for these routes
-	mux.HandleFunc("POST /execs/forgotpassword", handlers.GetExecsHandler)
 	mux.HandleFunc("POST /execs/password/reset/{resetCode}", handlers.GetExecsHandler)
 	mux.Handle("POST /execs/{id}/updatepassword", mw.JwtMiddleware(http.HandlerFunc(handlers.UpdatePasswordHandler)))
 }

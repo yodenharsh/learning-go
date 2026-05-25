@@ -2,13 +2,23 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/argon2"
 )
+
+type ResetPasswordCode struct {
+	Value     string
+	ExpiresAt time.Time
+}
 
 func HashAndEncodePassword(originalPassword string) (string, error) {
 	if originalPassword == "" {
@@ -52,4 +62,28 @@ func CompareHashedEncodedPassword(encodedHash, passwordToCheckAgainst string) (b
 	computedHashOfPasswordToCheck := argon2.IDKey([]byte(passwordToCheckAgainst), salt, 1, 1024*64, 4, 32)
 
 	return subtle.ConstantTimeCompare(hash, computedHashOfPasswordToCheck) == 1, nil
+}
+
+func CreatePasswordResetToken() (ResetPasswordCode, error) {
+	parsedDuration, err := strconv.Atoi(os.Getenv("PASSWORD_RESET_TOKEN_EXP_DURATION_IN_MINUTES"))
+
+	if err != nil {
+		return ResetPasswordCode{}, ErrorHandler(err, "Failed when reading and parsing env variable")
+	}
+	mins := time.Duration(parsedDuration)
+	expiry := time.Now().Add(mins * time.Minute)
+
+	tokenBytes := make([]byte, 32)
+	_, err = rand.Read(tokenBytes)
+	if err != nil {
+		return ResetPasswordCode{}, ErrorHandler(err, "Error during creating random bytes")
+	}
+
+	hashedToken := sha256.Sum256(tokenBytes)
+	hashedTokenString := hex.EncodeToString(hashedToken[:])
+
+	return ResetPasswordCode{
+		Value:     hashedTokenString,
+		ExpiresAt: expiry,
+	}, err
 }
