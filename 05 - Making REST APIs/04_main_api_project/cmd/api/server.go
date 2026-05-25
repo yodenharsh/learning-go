@@ -36,9 +36,9 @@ func main() {
 
 	// Middlewares order is first-in first-applied
 	secureMux := utils.ApplyMiddlewares(router.Router(),
-		mw.Hpp(hppOptions),
-		mw.Compression,
 		mw.SecurityHeaders,
+		mw.Compression,
+		mw.Hpp(hppOptions),
 		mw.ResponseTimeMiddleware,
 		rl.RateLimitingMiddleware,
 		mw.Cors)
