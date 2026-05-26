@@ -59,7 +59,6 @@ func main() {
 	// }
 
 	loadEnvFromEmbeddedFile()
-	fmt.Println("Environment variable API_PORT: ", os.Getenv("API_PORT"))
 
 	port := os.Getenv("API_PORT")
 	fmt.Println("Server is running on port ", port)
