@@ -1,27 +1,65 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	mw "restapi/internal/api/middlewares"
 	"restapi/internal/api/router"
-	"restapi/internal/repository/sqlconnect"
 	"restapi/pkg/utils"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
-func main() {
+//go:embed .env
+var envFile embed.FS
 
-	err := godotenv.Load()
+func loadEnvFromEmbeddedFile() {
+	content, err := envFile.ReadFile(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file:", err)
+		log.Fatalf("Error reading the .env file")
+		return
 	}
 
-	sqlconnect.ConnectDb()
+	// Create a temporary file to store the .env content
+	tempFile, err := os.CreateTemp("", ".env")
+	if err != nil {
+		log.Fatalf("Error creating temporary file for .env content")
+		return
+	}
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write(content)
+	if err != nil {
+		log.Fatalf("Error writing to temporary .env file")
+		return
+	}
+
+	err = tempFile.Close()
+	if err != nil {
+		log.Fatalf("Error closing temporary .env file")
+		return
+	}
+
+	err = godotenv.Load(tempFile.Name())
+	if err != nil {
+		log.Fatalf("Error loading .env file from embedded content: %v", err)
+	}
+}
+
+func main() {
+
+	// Only for development
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file:", err)
+	// }
+
+	loadEnvFromEmbeddedFile()
+	fmt.Println("Environment variable API_PORT: ", os.Getenv("API_PORT"))
 
 	port := os.Getenv("API_PORT")
 	fmt.Println("Server is running on port ", port)
@@ -48,7 +86,7 @@ func main() {
 		Handler: secureMux,
 	}
 
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}
