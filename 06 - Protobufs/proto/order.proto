@@ -1,0 +1,19 @@
+edition = "2024";
+
+package main;
+
+import "user.proto";
+
+option go_package = "/gen;mainpb";
+
+message OrdersResponse {
+  string id = 1;
+  User user = 2;
+  Address address = 3;
+}
+
+message Address {
+  string address_line = 1;
+  string city = 2;
+  string state = 3;
+}

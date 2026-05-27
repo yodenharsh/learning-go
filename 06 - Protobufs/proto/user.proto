@@ -1,0 +1,10 @@
+edition = "2023";
+
+package main;
+
+option go_package = "/gen;mainpb";
+
+message User {
+  string username = 1;
+  string email = 2;
+}
