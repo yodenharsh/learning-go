@@ -1,0 +1,23 @@
+edition = "2024";
+
+package main;
+
+option go_package = "/gen;mainpb";
+
+service GreeterService {
+  rpc SayHello(GreeterServiceSayHelloRequest) returns (GreeterServiceSayHelloResponse);
+}
+
+message GreeterServiceSayHelloRequest {
+  string name = 1;
+  uint32 age = 2;
+}
+
+message GreeterServiceSayHelloResponse {
+  string conf_message = 1;
+}
+
+message UserProfile {
+  string username = 1;
+  string email = 2;
+}
