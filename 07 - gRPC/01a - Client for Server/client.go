@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	mainpb "simplegrpcclient/gen"
+	mainpb "simplegrpcclient/proto/gen"
 	"time"
 
 	"google.golang.org/grpc"
@@ -41,4 +41,6 @@ func main() {
 	}
 
 	fmt.Println("Response from server:", res.GetSum())
+	state := conn.GetState()
+	log.Println("Connection state:", state)
 }

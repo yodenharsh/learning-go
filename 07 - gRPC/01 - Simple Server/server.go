@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	mainpb "simplegrpcserver/gen"
+	mainpb "simplegrpcserver/proto/gen"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
