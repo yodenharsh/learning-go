@@ -530,6 +530,84 @@ func (b0 SendNumbersResponse_builder) Build() *SendNumbersResponse {
 	return m0
 }
 
+type ChatMessage struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Message     *string                `protobuf:"bytes,1,opt,name=message"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ChatMessage) Reset() {
+	*x = ChatMessage{}
+	mi := &file_main_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatMessage) ProtoMessage() {}
+
+func (x *ChatMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_main_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ChatMessage) GetMessage() string {
+	if x != nil {
+		if x.xxx_hidden_Message != nil {
+			return *x.xxx_hidden_Message
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ChatMessage) SetMessage(v string) {
+	x.xxx_hidden_Message = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *ChatMessage) HasMessage() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ChatMessage) ClearMessage() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Message = nil
+}
+
+type ChatMessage_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Message *string
+}
+
+func (b0 ChatMessage_builder) Build() *ChatMessage {
+	m0 := &ChatMessage{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Message != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Message = b.Message
+	}
+	return m0
+}
+
 var File_main_proto protoreflect.FileDescriptor
 
 const file_main_proto_rawDesc = "" +
@@ -551,13 +629,16 @@ const file_main_proto_rawDesc = "" +
 	"\x06number\x18\x01 \x01(\x05R\x06number\"?\n" +
 	"\x13SendNumbersResponse\x12\x10\n" +
 	"\x03sum\x18\x01 \x01(\x05R\x03sum\x12\x16\n" +
-	"\x06number\x18\x02 \x01(\x05R\x06number2\x81\x02\n" +
+	"\x06number\x18\x02 \x01(\x05R\x06number\"'\n" +
+	"\vChatMessage\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\xbf\x02\n" +
 	"\x11CalculatorService\x126\n" +
 	"\x03Add\x12\x16.calculator.AddRequest\x1a\x17.calculator.AddResponse\x12b\n" +
 	"\x11GenerateFibonacci\x12$.calculator.GenerateFibonacciRequest\x1a%.calculator.GenerateFibonacciResponse0\x01\x12P\n" +
-	"\vSendNumbers\x12\x1e.calculator.SendNumbersRequest\x1a\x1f.calculator.SendNumbersResponse(\x01B\x13Z\x11/gen;calculatorpbb\beditionsp\xe9\a"
+	"\vSendNumbers\x12\x1e.calculator.SendNumbersRequest\x1a\x1f.calculator.SendNumbersResponse(\x01\x12<\n" +
+	"\x04Chat\x12\x17.calculator.ChatMessage\x1a\x17.calculator.ChatMessage(\x010\x01B\x13Z\x11/gen;calculatorpbb\beditionsp\xe9\a"
 
-var file_main_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_main_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_main_proto_goTypes = []any{
 	(*AddRequest)(nil),                // 0: calculator.AddRequest
 	(*AddResponse)(nil),               // 1: calculator.AddResponse
@@ -565,16 +646,19 @@ var file_main_proto_goTypes = []any{
 	(*GenerateFibonacciResponse)(nil), // 3: calculator.GenerateFibonacciResponse
 	(*SendNumbersRequest)(nil),        // 4: calculator.SendNumbersRequest
 	(*SendNumbersResponse)(nil),       // 5: calculator.SendNumbersResponse
+	(*ChatMessage)(nil),               // 6: calculator.ChatMessage
 }
 var file_main_proto_depIdxs = []int32{
 	0, // 0: calculator.CalculatorService.Add:input_type -> calculator.AddRequest
 	2, // 1: calculator.CalculatorService.GenerateFibonacci:input_type -> calculator.GenerateFibonacciRequest
 	4, // 2: calculator.CalculatorService.SendNumbers:input_type -> calculator.SendNumbersRequest
-	1, // 3: calculator.CalculatorService.Add:output_type -> calculator.AddResponse
-	3, // 4: calculator.CalculatorService.GenerateFibonacci:output_type -> calculator.GenerateFibonacciResponse
-	5, // 5: calculator.CalculatorService.SendNumbers:output_type -> calculator.SendNumbersResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	6, // 3: calculator.CalculatorService.Chat:input_type -> calculator.ChatMessage
+	1, // 4: calculator.CalculatorService.Add:output_type -> calculator.AddResponse
+	3, // 5: calculator.CalculatorService.GenerateFibonacci:output_type -> calculator.GenerateFibonacciResponse
+	5, // 6: calculator.CalculatorService.SendNumbers:output_type -> calculator.SendNumbersResponse
+	6, // 7: calculator.CalculatorService.Chat:output_type -> calculator.ChatMessage
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -591,7 +675,7 @@ func file_main_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_main_proto_rawDesc), len(file_main_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
