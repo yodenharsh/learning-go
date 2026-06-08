@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	CalculatorService_Add_FullMethodName               = "/calculator.CalculatorService/Add"
 	CalculatorService_GenerateFibonacci_FullMethodName = "/calculator.CalculatorService/GenerateFibonacci"
+	CalculatorService_SendNumbers_FullMethodName       = "/calculator.CalculatorService/SendNumbers"
 )
 
 // CalculatorServiceClient is the client API for CalculatorService service.
@@ -29,6 +30,7 @@ const (
 type CalculatorServiceClient interface {
 	Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	GenerateFibonacci(ctx context.Context, in *GenerateFibonacciRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GenerateFibonacciResponse], error)
+	SendNumbers(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SendNumbersRequest, SendNumbersResponse], error)
 }
 
 type calculatorServiceClient struct {
@@ -68,12 +70,26 @@ func (c *calculatorServiceClient) GenerateFibonacci(ctx context.Context, in *Gen
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CalculatorService_GenerateFibonacciClient = grpc.ServerStreamingClient[GenerateFibonacciResponse]
 
+func (c *calculatorServiceClient) SendNumbers(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SendNumbersRequest, SendNumbersResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &CalculatorService_ServiceDesc.Streams[1], CalculatorService_SendNumbers_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SendNumbersRequest, SendNumbersResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CalculatorService_SendNumbersClient = grpc.ClientStreamingClient[SendNumbersRequest, SendNumbersResponse]
+
 // CalculatorServiceServer is the server API for CalculatorService service.
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility.
 type CalculatorServiceServer interface {
 	Add(context.Context, *AddRequest) (*AddResponse, error)
 	GenerateFibonacci(*GenerateFibonacciRequest, grpc.ServerStreamingServer[GenerateFibonacciResponse]) error
+	SendNumbers(grpc.ClientStreamingServer[SendNumbersRequest, SendNumbersResponse]) error
 	mustEmbedUnimplementedCalculatorServiceServer()
 }
 
@@ -89,6 +105,9 @@ func (UnimplementedCalculatorServiceServer) Add(context.Context, *AddRequest) (*
 }
 func (UnimplementedCalculatorServiceServer) GenerateFibonacci(*GenerateFibonacciRequest, grpc.ServerStreamingServer[GenerateFibonacciResponse]) error {
 	return status.Error(codes.Unimplemented, "method GenerateFibonacci not implemented")
+}
+func (UnimplementedCalculatorServiceServer) SendNumbers(grpc.ClientStreamingServer[SendNumbersRequest, SendNumbersResponse]) error {
+	return status.Error(codes.Unimplemented, "method SendNumbers not implemented")
 }
 func (UnimplementedCalculatorServiceServer) mustEmbedUnimplementedCalculatorServiceServer() {}
 func (UnimplementedCalculatorServiceServer) testEmbeddedByValue()                           {}
@@ -140,6 +159,13 @@ func _CalculatorService_GenerateFibonacci_Handler(srv interface{}, stream grpc.S
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CalculatorService_GenerateFibonacciServer = grpc.ServerStreamingServer[GenerateFibonacciResponse]
 
+func _CalculatorService_SendNumbers_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CalculatorServiceServer).SendNumbers(&grpc.GenericServerStream[SendNumbersRequest, SendNumbersResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type CalculatorService_SendNumbersServer = grpc.ClientStreamingServer[SendNumbersRequest, SendNumbersResponse]
+
 // CalculatorService_ServiceDesc is the grpc.ServiceDesc for CalculatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -157,6 +183,11 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "GenerateFibonacci",
 			Handler:       _CalculatorService_GenerateFibonacci_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "SendNumbers",
+			Handler:       _CalculatorService_SendNumbers_Handler,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "main.proto",

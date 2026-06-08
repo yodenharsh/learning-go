@@ -350,6 +350,186 @@ func (b0 GenerateFibonacciResponse_builder) Build() *GenerateFibonacciResponse {
 	return m0
 }
 
+type SendNumbersRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Number      int32                  `protobuf:"varint,1,opt,name=number"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SendNumbersRequest) Reset() {
+	*x = SendNumbersRequest{}
+	mi := &file_main_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendNumbersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendNumbersRequest) ProtoMessage() {}
+
+func (x *SendNumbersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_main_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SendNumbersRequest) GetNumber() int32 {
+	if x != nil {
+		return x.xxx_hidden_Number
+	}
+	return 0
+}
+
+func (x *SendNumbersRequest) SetNumber(v int32) {
+	x.xxx_hidden_Number = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *SendNumbersRequest) HasNumber() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SendNumbersRequest) ClearNumber() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Number = 0
+}
+
+type SendNumbersRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Number *int32
+}
+
+func (b0 SendNumbersRequest_builder) Build() *SendNumbersRequest {
+	m0 := &SendNumbersRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Number != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Number = *b.Number
+	}
+	return m0
+}
+
+type SendNumbersResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Sum         int32                  `protobuf:"varint,1,opt,name=sum"`
+	xxx_hidden_Number      int32                  `protobuf:"varint,2,opt,name=number"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SendNumbersResponse) Reset() {
+	*x = SendNumbersResponse{}
+	mi := &file_main_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendNumbersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendNumbersResponse) ProtoMessage() {}
+
+func (x *SendNumbersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_main_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SendNumbersResponse) GetSum() int32 {
+	if x != nil {
+		return x.xxx_hidden_Sum
+	}
+	return 0
+}
+
+func (x *SendNumbersResponse) GetNumber() int32 {
+	if x != nil {
+		return x.xxx_hidden_Number
+	}
+	return 0
+}
+
+func (x *SendNumbersResponse) SetSum(v int32) {
+	x.xxx_hidden_Sum = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *SendNumbersResponse) SetNumber(v int32) {
+	x.xxx_hidden_Number = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *SendNumbersResponse) HasSum() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SendNumbersResponse) HasNumber() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SendNumbersResponse) ClearSum() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Sum = 0
+}
+
+func (x *SendNumbersResponse) ClearNumber() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Number = 0
+}
+
+type SendNumbersResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Sum    *int32
+	Number *int32
+}
+
+func (b0 SendNumbersResponse_builder) Build() *SendNumbersResponse {
+	m0 := &SendNumbersResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Sum != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		x.xxx_hidden_Sum = *b.Sum
+	}
+	if b.Number != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Number = *b.Number
+	}
+	return m0
+}
+
 var File_main_proto protoreflect.FileDescriptor
 
 const file_main_proto_rawDesc = "" +
@@ -366,25 +546,35 @@ const file_main_proto_rawDesc = "" +
 	"\x18GenerateFibonacciRequest\x12\f\n" +
 	"\x01n\x18\x01 \x01(\x05R\x01n\"3\n" +
 	"\x19GenerateFibonacciResponse\x12\x16\n" +
-	"\x06number\x18\x01 \x01(\x05R\x06number2\xaf\x01\n" +
+	"\x06number\x18\x01 \x01(\x05R\x06number\",\n" +
+	"\x12SendNumbersRequest\x12\x16\n" +
+	"\x06number\x18\x01 \x01(\x05R\x06number\"?\n" +
+	"\x13SendNumbersResponse\x12\x10\n" +
+	"\x03sum\x18\x01 \x01(\x05R\x03sum\x12\x16\n" +
+	"\x06number\x18\x02 \x01(\x05R\x06number2\x81\x02\n" +
 	"\x11CalculatorService\x126\n" +
 	"\x03Add\x12\x16.calculator.AddRequest\x1a\x17.calculator.AddResponse\x12b\n" +
-	"\x11GenerateFibonacci\x12$.calculator.GenerateFibonacciRequest\x1a%.calculator.GenerateFibonacciResponse0\x01B\x13Z\x11/gen;calculatorpbb\beditionsp\xe9\a"
+	"\x11GenerateFibonacci\x12$.calculator.GenerateFibonacciRequest\x1a%.calculator.GenerateFibonacciResponse0\x01\x12P\n" +
+	"\vSendNumbers\x12\x1e.calculator.SendNumbersRequest\x1a\x1f.calculator.SendNumbersResponse(\x01B\x13Z\x11/gen;calculatorpbb\beditionsp\xe9\a"
 
-var file_main_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_main_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_main_proto_goTypes = []any{
 	(*AddRequest)(nil),                // 0: calculator.AddRequest
 	(*AddResponse)(nil),               // 1: calculator.AddResponse
 	(*GenerateFibonacciRequest)(nil),  // 2: calculator.GenerateFibonacciRequest
 	(*GenerateFibonacciResponse)(nil), // 3: calculator.GenerateFibonacciResponse
+	(*SendNumbersRequest)(nil),        // 4: calculator.SendNumbersRequest
+	(*SendNumbersResponse)(nil),       // 5: calculator.SendNumbersResponse
 }
 var file_main_proto_depIdxs = []int32{
 	0, // 0: calculator.CalculatorService.Add:input_type -> calculator.AddRequest
 	2, // 1: calculator.CalculatorService.GenerateFibonacci:input_type -> calculator.GenerateFibonacciRequest
-	1, // 2: calculator.CalculatorService.Add:output_type -> calculator.AddResponse
-	3, // 3: calculator.CalculatorService.GenerateFibonacci:output_type -> calculator.GenerateFibonacciResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	4, // 2: calculator.CalculatorService.SendNumbers:input_type -> calculator.SendNumbersRequest
+	1, // 3: calculator.CalculatorService.Add:output_type -> calculator.AddResponse
+	3, // 4: calculator.CalculatorService.GenerateFibonacci:output_type -> calculator.GenerateFibonacciResponse
+	5, // 5: calculator.CalculatorService.SendNumbers:output_type -> calculator.SendNumbersResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -401,7 +591,7 @@ func file_main_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_main_proto_rawDesc), len(file_main_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

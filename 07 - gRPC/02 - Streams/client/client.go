@@ -5,6 +5,7 @@ import (
 	calculatorpb "grpcstreamsclient/proto/gen"
 	"io"
 	"log"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -39,6 +40,23 @@ func main() {
 		}
 
 		log.Println("Res: ", res.GetNumber())
+	}
+
+	sendNumbersStream, err := client.SendNumbers(ctx)
+	if err != nil {
+		log.Fatalln("error occurred when calling SendNumbers RPC", err)
+	}
+
+	for i := range 5 {
+		req := &calculatorpb.SendNumbersRequest{}
+		req.SetNumber(int32(i + 10))
+
+		err = sendNumbersStream.Send(req)
+		if err != nil {
+			log.Fatalln("Error when sending stream: ", err)
+		}
+		time.Sleep(300 * time.Millisecond)
+		log.Println("Sent number: ", req.GetNumber())
 	}
 
 }

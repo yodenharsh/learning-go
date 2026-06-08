@@ -7,6 +7,7 @@ option go_package = "/gen;calculatorpb";
 service CalculatorService {
   rpc Add(AddRequest) returns (AddResponse);
   rpc GenerateFibonacci(GenerateFibonacciRequest) returns (stream GenerateFibonacciResponse);
+  rpc SendNumbers(stream SendNumbersRequest) returns (SendNumbersResponse);
 }
 
 message AddRequest {
@@ -24,4 +25,13 @@ message GenerateFibonacciRequest {
 
 message GenerateFibonacciResponse {
   int32 number = 1;
+}
+
+message SendNumbersRequest {
+  int32 number = 1;
+}
+
+message SendNumbersResponse {
+  int32 sum = 1;
+  int32 number = 2;
 }
