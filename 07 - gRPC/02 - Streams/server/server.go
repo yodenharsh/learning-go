@@ -26,7 +26,7 @@ func (s *server) GenerateFibonacci(req *calculatorpb.GenerateFibonacciRequest, s
 		}
 
 		a, b = b, a+b
-		time.Sleep(time.Millisecond * 700)
+		time.Sleep(time.Millisecond * 200)
 	}
 
 	return nil

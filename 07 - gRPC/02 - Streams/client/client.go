@@ -23,7 +23,7 @@ func main() {
 	ctx := context.Background()
 
 	req := &calculatorpb.GenerateFibonacciRequest{}
-	req.SetN(20)
+	req.SetN(10)
 
 	stream, err := client.GenerateFibonacci(ctx, req)
 	if err != nil {
@@ -59,4 +59,11 @@ func main() {
 		log.Println("Sent number: ", req.GetNumber())
 	}
 
+	res, err := sendNumbersStream.CloseAndRecv()
+	if err != nil {
+		log.Fatalln("Error when closing and receiving: ", err)
+	}
+
+	log.Println("Sum: ", res.GetSum())
+	log.Println("Count: ", res.GetNumber())
 }
