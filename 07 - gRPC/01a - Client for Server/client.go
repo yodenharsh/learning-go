@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	mainpb "simplegrpcclient/proto/gen"
+	farewellpb "simplegrpcclient/proto/gen/farewell"
 	"time"
 
 	"google.golang.org/grpc"
@@ -26,7 +27,7 @@ func main() {
 
 	defer conn.Close()
 
-	client := mainpb.NewCalculateServiceClient(conn)
+	client1 := mainpb.NewCalculateServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
@@ -35,12 +36,35 @@ func main() {
 	req.SetA(10)
 	req.SetB(15)
 
-	res, err := client.Add(ctx, &req)
+	res1, err := client1.Add(ctx, &req)
 	if err != nil {
 		log.Fatalln("Error while calling Add RPC:", err)
 	}
 
-	fmt.Println("Response from server:", res.GetSum())
+	fmt.Println("Response from server:", res1.GetSum())
+
+	client2 := mainpb.NewGreeterServiceClient(conn)
+	greeterReq := mainpb.HelloRequest{}
+	greeterReq.SetName("Harsh Morayya")
+
+	res2, err := client2.Greet(ctx, &greeterReq)
+	if err != nil {
+		log.Fatalln("Error when calling Greet RPC:", err)
+	}
+
+	fmt.Println("Greet response from server:", res2.GetMessage())
+
+	client3 := farewellpb.NewAufWiedershenServiceClient(conn)
+	farewellReq := farewellpb.GoodByeRequest{}
+	farewellReq.SetName("Harsh Morayya")
+
+	res3, err := client3.GoodBye(ctx, &farewellReq)
+	if err != nil {
+		log.Fatalln("Error when calling GoodBye RPC:", err)
+	}
+
+	fmt.Println("GoodBye response from server:", res3.GetMessage())
+
 	state := conn.GetState()
 	log.Println("Connection state:", state)
 }

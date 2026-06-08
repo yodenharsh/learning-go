@@ -1,0 +1,17 @@
+edition = "2024";
+
+package farewell;
+
+option go_package = "/gen/farewell;farewellpb";
+
+service AufWiedershenService {
+  rpc GoodBye(GoodByeRequest) returns (GoodByeResponse);
+}
+
+message GoodByeRequest {
+  string name = 1;
+}
+
+message GoodByeResponse {
+  string message = 1;
+}

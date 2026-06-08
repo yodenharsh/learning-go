@@ -32,6 +32,13 @@ func (s *server) Greet(ctx context.Context, req *mainpb.GreetRequest) (*mainpb.G
 	return greetResponse, nil
 }
 
+func (s *server) GoodBye(ctx context.Context, req *farewellpb.GoodByeRequest) (*farewellpb.GoodByeResponse, error) {
+	farewellResponse := &farewellpb.GoodByeResponse{}
+	farewellResponse.SetMessage("Auf Wiedersehen " + req.GetName() + "!")
+
+	return farewellResponse, nil
+}
+
 func main() {
 	cert := "cert.pem"
 	key := "key.pem"
