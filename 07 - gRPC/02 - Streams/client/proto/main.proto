@@ -1,0 +1,27 @@
+edition = "2024";
+
+package calculator;
+
+option go_package = "/gen;calculatorpb";
+
+service CalculatorService {
+  rpc Add(AddRequest) returns (AddResponse);
+  rpc GenerateFibonacci(GenerateFibonacciRequest) returns (stream GenerateFibonacciResponse);
+}
+
+message AddRequest {
+  int32 a = 1;
+  int32 b = 2;
+}
+
+message AddResponse {
+  int32 result = 1;
+}
+
+message GenerateFibonacciRequest {
+  int32 n = 1;
+}
+
+message GenerateFibonacciResponse {
+  int32 number = 1;
+}
