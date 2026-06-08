@@ -13,6 +13,7 @@ import (
 
 type server struct {
 	mainpb.UnimplementedCalculateServiceServer
+	mainpb.UnimplementedGreeterServiceServer
 }
 
 func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddResponse, error) {
