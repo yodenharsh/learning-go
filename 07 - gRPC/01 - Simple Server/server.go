@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	mainpb "simplegrpcserver/proto/gen"
+	farewellpb "simplegrpcserver/proto/gen/farewell"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -14,6 +15,7 @@ import (
 type server struct {
 	mainpb.UnimplementedCalculateServiceServer
 	mainpb.UnimplementedGreeterServiceServer
+	farewellpb.UnimplementedAufWiedershenServiceServer
 }
 
 func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddResponse, error) {
@@ -21,6 +23,13 @@ func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddRe
 	addResponse.SetSum(req.GetA() + req.GetB())
 
 	return addResponse, nil
+}
+
+func (s *server) Greet(ctx context.Context, req *mainpb.GreetRequest) (*mainpb.GreetResponse, error) {
+	greetResponse := &mainpb.GreetResponse{}
+	greetResponse.SetMessage("Hello " + req.GetName() + "!")
+
+	return greetResponse, nil
 }
 
 func main() {
@@ -41,6 +50,8 @@ func main() {
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 
 	mainpb.RegisterCalculateServiceServer(grpcServer, &server{})
+	mainpb.RegisterGreeterServiceServer(grpcServer, &server{})
+	farewellpb.RegisterAufWiedershenServiceServer(grpcServer, &server{})
 
 	err = grpcServer.Serve(listener)
 	if err != nil {
