@@ -215,20 +215,20 @@ const file_main_proto_rawDesc = "" +
 	"\x10CalculateService\x12.\n" +
 	"\x03Add\x12\x12.mainpb.AddRequest\x1a\x13.mainpb.AddResponse2F\n" +
 	"\x0eGreeterService\x124\n" +
-	"\x05Greet\x12\x14.mainpb.HelloRequest\x1a\x15.mainpb.HelloResponseB\rZ\v/gen;mainpbb\beditionsp\xe9\a"
+	"\x05Greet\x12\x14.mainpb.GreetRequest\x1a\x15.mainpb.GreetResponseB\rZ\v/gen;mainpbb\beditionsp\xe9\a"
 
 var file_main_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_main_proto_goTypes = []any{
 	(*AddRequest)(nil),    // 0: mainpb.AddRequest
 	(*AddResponse)(nil),   // 1: mainpb.AddResponse
-	(*HelloRequest)(nil),  // 2: mainpb.HelloRequest
-	(*HelloResponse)(nil), // 3: mainpb.HelloResponse
+	(*GreetRequest)(nil),  // 2: mainpb.GreetRequest
+	(*GreetResponse)(nil), // 3: mainpb.GreetResponse
 }
 var file_main_proto_depIdxs = []int32{
 	0, // 0: mainpb.CalculateService.Add:input_type -> mainpb.AddRequest
-	2, // 1: mainpb.GreeterService.Greet:input_type -> mainpb.HelloRequest
+	2, // 1: mainpb.GreeterService.Greet:input_type -> mainpb.GreetRequest
 	1, // 2: mainpb.CalculateService.Add:output_type -> mainpb.AddResponse
-	3, // 3: mainpb.GreeterService.Greet:output_type -> mainpb.HelloResponse
+	3, // 3: mainpb.GreeterService.Greet:output_type -> mainpb.GreetResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

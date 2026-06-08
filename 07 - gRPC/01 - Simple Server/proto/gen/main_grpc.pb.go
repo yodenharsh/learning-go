@@ -128,7 +128,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GreeterServiceClient interface {
-	Greet(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+	Greet(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetResponse, error)
 }
 
 type greeterServiceClient struct {
@@ -139,9 +139,9 @@ func NewGreeterServiceClient(cc grpc.ClientConnInterface) GreeterServiceClient {
 	return &greeterServiceClient{cc}
 }
 
-func (c *greeterServiceClient) Greet(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
+func (c *greeterServiceClient) Greet(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HelloResponse)
+	out := new(GreetResponse)
 	err := c.cc.Invoke(ctx, GreeterService_Greet_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func (c *greeterServiceClient) Greet(ctx context.Context, in *HelloRequest, opts
 // All implementations must embed UnimplementedGreeterServiceServer
 // for forward compatibility.
 type GreeterServiceServer interface {
-	Greet(context.Context, *HelloRequest) (*HelloResponse, error)
+	Greet(context.Context, *GreetRequest) (*GreetResponse, error)
 	mustEmbedUnimplementedGreeterServiceServer()
 }
 
@@ -164,7 +164,7 @@ type GreeterServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGreeterServiceServer struct{}
 
-func (UnimplementedGreeterServiceServer) Greet(context.Context, *HelloRequest) (*HelloResponse, error) {
+func (UnimplementedGreeterServiceServer) Greet(context.Context, *GreetRequest) (*GreetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Greet not implemented")
 }
 func (UnimplementedGreeterServiceServer) mustEmbedUnimplementedGreeterServiceServer() {}
@@ -189,7 +189,7 @@ func RegisterGreeterServiceServer(s grpc.ServiceRegistrar, srv GreeterServiceSer
 }
 
 func _GreeterService_Greet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
+	in := new(GreetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func _GreeterService_Greet_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: GreeterService_Greet_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServiceServer).Greet(ctx, req.(*HelloRequest))
+		return srv.(GreeterServiceServer).Greet(ctx, req.(*GreetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

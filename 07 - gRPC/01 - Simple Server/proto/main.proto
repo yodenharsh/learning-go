@@ -1,8 +1,8 @@
 edition = "2024";
 
-import "greeter.proto";
-
 package mainpb;
+
+import "greeter.proto";
 
 option go_package = "/gen;mainpb";
 
@@ -11,7 +11,7 @@ service CalculateService {
 }
 
 service GreeterService {
-    rpc Greet (HelloRequest) returns (HelloResponse);
+  rpc Greet(GreetRequest) returns (GreetResponse);
 }
 
 message AddRequest {
