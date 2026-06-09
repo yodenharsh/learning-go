@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 type server struct {
@@ -19,8 +20,24 @@ type server struct {
 }
 
 func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		log.Println("No metadata received")
+	} else {
+		log.Println("Metadata: ", md)
+		if val, ok := md["a uthorization"]; ok {
+			log.Println("Authorization: ", val)
+		}
+	}
+
 	addResponse := &mainpb.AddResponse{}
 	addResponse.SetSum(req.GetA() + req.GetB())
+
+	responseMd := metadata.Pairs("x-testing", "from-server")
+	grpc.SendHeader(ctx, responseMd)
+
+	trailerMd := metadata.Pairs("after-finishing", "done")
+	grpc.SetTrailer(ctx, trailerMd)
 
 	return addResponse, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 func main() {
@@ -32,14 +33,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
+	ctxWithMd := metadata.AppendToOutgoingContext(ctx,
+		"Authorization", "Bearer placeholder-token",
+		"X-Testing", "testing")
+
 	req := mainpb.AddRequest{}
 	req.SetA(10)
 	req.SetB(15)
 
-	res1, err := client1.Add(ctx, &req)
+	var resHeader, resTrailer metadata.MD
+	res1, err := client1.Add(
+		ctxWithMd, &req, grpc.Header(&resHeader), grpc.Trailer(&resTrailer))
 	if err != nil {
 		log.Fatalln("Error while calling Add RPC:", err)
 	}
+
+	log.Println("Received header from server: ", resHeader)
+	log.Println("Received trailer from server: ", resTrailer)
 
 	fmt.Println("Response from server:", res1.GetSum())
 
@@ -47,7 +57,7 @@ func main() {
 	greeterReq := mainpb.HelloRequest{}
 	greeterReq.SetName("Harsh Morayya")
 
-	res2, err := client2.Greet(ctx, &greeterReq)
+	res2, err := client2.Greet(ctxWithMd, &greeterReq)
 	if err != nil {
 		log.Fatalln("Error when calling Greet RPC:", err)
 	}
@@ -58,7 +68,7 @@ func main() {
 	farewellReq := farewellpb.GoodByeRequest{}
 	farewellReq.SetName("Harsh Morayya")
 
-	res3, err := client3.GoodBye(ctx, &farewellReq)
+	res3, err := client3.GoodBye(ctxWithMd, &farewellReq)
 	if err != nil {
 		log.Fatalln("Error when calling GoodBye RPC:", err)
 	}
