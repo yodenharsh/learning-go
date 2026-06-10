@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/reflection"
 )
 
 type server struct {
@@ -100,6 +101,8 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	calculatorpb.RegisterCalculatorServiceServer(grpcServer, &server{})
+
+	reflection.Register(grpcServer)
 
 	err = grpcServer.Serve(lis)
 	if err != nil {
