@@ -2,24 +2,20 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net"
-	mainpb "simplegrpcserver/proto/gen"
-	farewellpb "simplegrpcserver/proto/gen/farewell"
+	"net/http"
+	gen "simplegrpcserver/proto/gen"
+	"simplegrpcserver/proto/gen/genconnect"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 )
 
-type server struct {
-	mainpb.UnimplementedCalculateServiceServer
-	mainpb.UnimplementedGreeterServiceServer
-	farewellpb.UnimplementedAufWiedershenServiceServer
-}
+type server struct{}
 
-func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddResponse, error) {
+func (s *server) Add(ctx context.Context, req *gen.AddRequest) (*gen.AddResponse, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		log.Println("No metadata received")
@@ -30,7 +26,7 @@ func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddRe
 		}
 	}
 
-	addResponse := &mainpb.AddResponse{}
+	addResponse := &gen.AddResponse{}
 	addResponse.SetSum(req.GetA() + req.GetB())
 
 	responseMd := metadata.Pairs("x-testing", "from-server")
@@ -42,15 +38,15 @@ func (s *server) Add(ctx context.Context, req *mainpb.AddRequest) (*mainpb.AddRe
 	return addResponse, nil
 }
 
-func (s *server) Greet(ctx context.Context, req *mainpb.GreetRequest) (*mainpb.GreetResponse, error) {
-	greetResponse := &mainpb.GreetResponse{}
+func (s *server) Greet(ctx context.Context, req *gen.GreetRequest) (*gen.GreetResponse, error) {
+	greetResponse := &gen.GreetResponse{}
 	greetResponse.SetMessage("Hello " + req.GetName() + "!")
 
 	return greetResponse, nil
 }
 
-func (s *server) GoodBye(ctx context.Context, req *farewellpb.GoodByeRequest) (*farewellpb.GoodByeResponse, error) {
-	farewellResponse := &farewellpb.GoodByeResponse{}
+func (s *server) GoodBye(ctx context.Context, req *gen.GoodByeRequest) (*gen.GoodByeResponse, error) {
+	farewellResponse := &gen.GoodByeResponse{}
 	farewellResponse.SetMessage("Auf Wiedersehen " + req.GetName() + "!")
 
 	return farewellResponse, nil
@@ -62,25 +58,14 @@ func main() {
 
 	port := "50051"
 
-	listener, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		log.Fatal("Failed to listen:", err)
+	mux := http.NewServeMux()
+	path, handler := genconnect.NewGreeterServiceHandler(&server{})
+	mux.Handle(path, handler)
+
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
 
-	creds, err := credentials.NewServerTLSFromFile(cert, key)
-	if err != nil {
-		log.Fatal("Failed to load TLS credentials:", err)
-	}
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
-
-	mainpb.RegisterCalculateServiceServer(grpcServer, &server{})
-	mainpb.RegisterGreeterServiceServer(grpcServer, &server{})
-	farewellpb.RegisterAufWiedershenServiceServer(grpcServer, &server{})
-
-	err = grpcServer.Serve(listener)
-	if err != nil {
-		log.Fatal("Failed to serve:", err)
-	}
-
-	fmt.Printf("Server is running on %v\n", port)
+	srv.ListenAndServeTLS(cert, key)
 }
