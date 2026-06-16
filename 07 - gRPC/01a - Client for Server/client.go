@@ -2,79 +2,86 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
 	mainpb "simplegrpcclient/proto/gen"
-	farewellpb "simplegrpcclient/proto/gen/farewell"
+	"simplegrpcclient/proto/gen/genconnect"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
+	"connectrpc.com/connect"
+	"golang.org/x/net/http2"
 )
 
 func main() {
-	cert := "cert.pem"
-	creds, err := credentials.NewClientTLSFromFile(cert, "")
+	caCert, err := os.ReadFile("cert.pem")
 	if err != nil {
-		log.Fatalln("Failed to load TLS credentials:", err)
-		return
+		log.Fatalln("Failed to read certificate:", err)
 	}
 
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(creds))
-	if err != nil {
-		log.Fatalln("Failed to connect to server:", err)
+	// Add it to a cert pool
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
+		log.Fatalln("Failed to append certificate")
 	}
 
-	defer conn.Close()
+	// Build a TLS-enabled HTTP/2 client
+	tlsConfig := &tls.Config{RootCAs: certPool}
+	httpClient := &http.Client{
+		Transport: &http2.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
 
-	client1 := mainpb.NewCalculateServiceClient(conn)
+	client1 := genconnect.NewCalculateServiceClient(httpClient, "https://localhost:50051", connect.WithGRPC())
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
-	ctxWithMd := metadata.AppendToOutgoingContext(ctx,
-		"Authorization", "Bearer placeholder-token",
-		"X-Testing", "testing")
+	reqBody := &mainpb.AddRequest{}
+	reqBody.SetA(10)
+	reqBody.SetB(15)
 
-	req := mainpb.AddRequest{}
-	req.SetA(10)
-	req.SetB(15)
+	req := connect.NewRequest(reqBody)
+	req.Header().Set("Authorization", "Bearer placeholder-token")
+	req.Header().Set("X-Testing", "testing")
 
-	var resHeader, resTrailer metadata.MD
-	res1, err := client1.Add(
-		ctxWithMd, &req, grpc.Header(&resHeader), grpc.Trailer(&resTrailer))
+	res1, err := client1.Add(ctx, req)
 	if err != nil {
 		log.Fatalln("Error while calling Add RPC:", err)
 	}
 
-	log.Println("Received header from server: ", resHeader)
-	log.Println("Received trailer from server: ", resTrailer)
+	log.Println("Received header from server: ", res1.Header())
+	log.Println("Received trailer from server: ", res1.Trailer())
 
-	fmt.Println("Response from server:", res1.GetSum())
+	fmt.Println("Response from server:", res1.Msg.GetSum())
 
-	client2 := mainpb.NewGreeterServiceClient(conn)
-	greeterReq := mainpb.HelloRequest{}
-	greeterReq.SetName("Harsh Morayya")
+	client2 := genconnect.NewGreeterServiceClient(httpClient, "https://localhost:50051", connect.WithGRPC())
+	greeterReqBody := mainpb.GreetRequest{}
+	greeterReqBody.SetName("Harsh Morayya")
 
-	res2, err := client2.Greet(ctxWithMd, &greeterReq)
+	greeterReq := connect.NewRequest(&greeterReqBody)
+
+	res2, err := client2.Greet(ctx, greeterReq)
 	if err != nil {
 		log.Fatalln("Error when calling Greet RPC:", err)
 	}
 
-	fmt.Println("Greet response from server:", res2.GetMessage())
+	fmt.Println("Greet response from server:", res2.Msg.GetMessage())
 
-	client3 := farewellpb.NewAufWiedershenServiceClient(conn)
-	farewellReq := farewellpb.GoodByeRequest{}
-	farewellReq.SetName("Harsh Morayya")
+	client3 := genconnect.NewAufWiedershenServiceClient(httpClient, "https://localhost:50051", connect.WithGRPC())
+	farewellReqBody := mainpb.GoodByeRequest{}
+	farewellReqBody.SetName("Harsh Morayya")
 
-	res3, err := client3.GoodBye(ctxWithMd, &farewellReq)
+	farewellReq := connect.NewRequest(&farewellReqBody)
+
+	res3, err := client3.GoodBye(ctx, farewellReq)
 	if err != nil {
 		log.Fatalln("Error when calling GoodBye RPC:", err)
 	}
 
-	fmt.Println("GoodBye response from server:", res3.GetMessage())
-
-	state := conn.GetState()
-	log.Println("Connection state:", state)
+	fmt.Println("GoodBye response from server:", res3.Msg.GetMessage())
 }
