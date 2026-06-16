@@ -7,49 +7,42 @@ import (
 	gen "simplegrpcserver/proto/gen"
 	"simplegrpcserver/proto/gen/genconnect"
 
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	"connectrpc.com/connect"
 )
 
 type server struct{}
 
-func (s *server) Add(ctx context.Context, req *gen.AddRequest) (*gen.AddResponse, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		log.Println("No metadata received")
-	} else {
-		log.Println("Metadata: ", md)
-		if val, ok := md["a uthorization"]; ok {
-			log.Println("Authorization: ", val)
-		}
-	}
+func (s *server) Add(ctx context.Context, req *connect.Request[gen.AddRequest]) (*connect.Response[gen.AddResponse], error) {
+	log.Println("Authorization:", req.Header().Get("Authorization"))
+	log.Println("X-Testing:", req.Header().Get("X-Testing"))
 
 	addResponse := &gen.AddResponse{}
-	addResponse.SetSum(req.GetA() + req.GetB())
+	addResponse.SetSum(req.Msg.GetA() + req.Msg.GetB())
 
-	responseMd := metadata.Pairs("x-testing", "from-server")
-	grpc.SendHeader(ctx, responseMd)
+	res := connect.NewResponse(addResponse)
 
-	trailerMd := metadata.Pairs("after-finishing", "done")
-	grpc.SetTrailer(ctx, trailerMd)
+	res.Header().Set("x-testing", "from-server")
+	res.Trailer().Set("after-finishing", "done")
 
-	return addResponse, nil
+	return res, nil
 }
 
-func (s *server) Greet(ctx context.Context, req *gen.GreetRequest) (*gen.GreetResponse, error) {
+func (s *server) Greet(ctx context.Context, req *connect.Request[gen.GreetRequest]) (*connect.Response[gen.GreetResponse], error) {
 	greetResponse := &gen.GreetResponse{}
-	greetResponse.SetMessage("Hello " + req.GetName() + "!")
+	greetResponse.SetMessage("Hello " + req.Msg.GetName() + "!")
 
-	return greetResponse, nil
+	res := connect.NewResponse(greetResponse)
+
+	return res, nil
 }
 
-func (s *server) GoodBye(ctx context.Context, req *gen.GoodByeRequest) (*gen.GoodByeResponse, error) {
+func (s *server) GoodBye(ctx context.Context, req *connect.Request[gen.GoodByeRequest]) (*connect.Response[gen.GoodByeResponse], error) {
 	farewellResponse := &gen.GoodByeResponse{}
-	farewellResponse.SetMessage("Auf Wiedersehen " + req.GetName() + "!")
+	farewellResponse.SetMessage("Auf Wiedersehen " + req.Msg.GetName() + "!")
 
-	return farewellResponse, nil
+	res := connect.NewResponse(farewellResponse)
+
+	return res, nil
 }
 
 func main() {
@@ -59,13 +52,20 @@ func main() {
 	port := "50051"
 
 	mux := http.NewServeMux()
-	path, handler := genconnect.NewGreeterServiceHandler(&server{})
-	mux.Handle(path, handler)
+	path1, handler1 := genconnect.NewGreeterServiceHandler(&server{})
+	path2, handler2 := genconnect.NewCalculateServiceHandler(&server{})
+	path3, handler3 := genconnect.NewAufWiedershenServiceHandler(&server{})
+	mux.Handle(path2, handler2)
+	mux.Handle(path1, handler1)
+	mux.Handle(path3, handler3)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Handler: mux,
 	}
 
-	srv.ListenAndServeTLS(cert, key)
+	err := srv.ListenAndServeTLS(cert, key)
+	if err != nil {
+		log.Fatalln()
+	}
 }

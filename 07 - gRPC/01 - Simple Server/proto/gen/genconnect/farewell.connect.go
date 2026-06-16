@@ -40,7 +40,7 @@ const (
 
 // AufWiedershenServiceClient is a client for the farewell.AufWiedershenService service.
 type AufWiedershenServiceClient interface {
-	GoodBye(context.Context, *gen.GoodByeRequest) (*gen.GoodByeResponse, error)
+	GoodBye(context.Context, *connect.Request[gen.GoodByeRequest]) (*connect.Response[gen.GoodByeResponse], error)
 }
 
 // NewAufWiedershenServiceClient constructs a client for the farewell.AufWiedershenService service.
@@ -69,17 +69,13 @@ type aufWiedershenServiceClient struct {
 }
 
 // GoodBye calls farewell.AufWiedershenService.GoodBye.
-func (c *aufWiedershenServiceClient) GoodBye(ctx context.Context, req *gen.GoodByeRequest) (*gen.GoodByeResponse, error) {
-	response, err := c.goodBye.CallUnary(ctx, connect.NewRequest(req))
-	if response != nil {
-		return response.Msg, err
-	}
-	return nil, err
+func (c *aufWiedershenServiceClient) GoodBye(ctx context.Context, req *connect.Request[gen.GoodByeRequest]) (*connect.Response[gen.GoodByeResponse], error) {
+	return c.goodBye.CallUnary(ctx, req)
 }
 
 // AufWiedershenServiceHandler is an implementation of the farewell.AufWiedershenService service.
 type AufWiedershenServiceHandler interface {
-	GoodBye(context.Context, *gen.GoodByeRequest) (*gen.GoodByeResponse, error)
+	GoodBye(context.Context, *connect.Request[gen.GoodByeRequest]) (*connect.Response[gen.GoodByeResponse], error)
 }
 
 // NewAufWiedershenServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -89,7 +85,7 @@ type AufWiedershenServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAufWiedershenServiceHandler(svc AufWiedershenServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	aufWiedershenServiceMethods := gen.File_farewell_proto.Services().ByName("AufWiedershenService").Methods()
-	aufWiedershenServiceGoodByeHandler := connect.NewUnaryHandlerSimple(
+	aufWiedershenServiceGoodByeHandler := connect.NewUnaryHandler(
 		AufWiedershenServiceGoodByeProcedure,
 		svc.GoodBye,
 		connect.WithSchema(aufWiedershenServiceMethods.ByName("GoodBye")),
@@ -108,6 +104,6 @@ func NewAufWiedershenServiceHandler(svc AufWiedershenServiceHandler, opts ...con
 // UnimplementedAufWiedershenServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAufWiedershenServiceHandler struct{}
 
-func (UnimplementedAufWiedershenServiceHandler) GoodBye(context.Context, *gen.GoodByeRequest) (*gen.GoodByeResponse, error) {
+func (UnimplementedAufWiedershenServiceHandler) GoodBye(context.Context, *connect.Request[gen.GoodByeRequest]) (*connect.Response[gen.GoodByeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("farewell.AufWiedershenService.GoodBye is not implemented"))
 }

@@ -43,7 +43,7 @@ const (
 
 // CalculateServiceClient is a client for the mainpb.CalculateService service.
 type CalculateServiceClient interface {
-	Add(context.Context, *gen.AddRequest) (*gen.AddResponse, error)
+	Add(context.Context, *connect.Request[gen.AddRequest]) (*connect.Response[gen.AddResponse], error)
 }
 
 // NewCalculateServiceClient constructs a client for the mainpb.CalculateService service. By
@@ -72,17 +72,13 @@ type calculateServiceClient struct {
 }
 
 // Add calls mainpb.CalculateService.Add.
-func (c *calculateServiceClient) Add(ctx context.Context, req *gen.AddRequest) (*gen.AddResponse, error) {
-	response, err := c.add.CallUnary(ctx, connect.NewRequest(req))
-	if response != nil {
-		return response.Msg, err
-	}
-	return nil, err
+func (c *calculateServiceClient) Add(ctx context.Context, req *connect.Request[gen.AddRequest]) (*connect.Response[gen.AddResponse], error) {
+	return c.add.CallUnary(ctx, req)
 }
 
 // CalculateServiceHandler is an implementation of the mainpb.CalculateService service.
 type CalculateServiceHandler interface {
-	Add(context.Context, *gen.AddRequest) (*gen.AddResponse, error)
+	Add(context.Context, *connect.Request[gen.AddRequest]) (*connect.Response[gen.AddResponse], error)
 }
 
 // NewCalculateServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -92,7 +88,7 @@ type CalculateServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewCalculateServiceHandler(svc CalculateServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	calculateServiceMethods := gen.File_main_proto.Services().ByName("CalculateService").Methods()
-	calculateServiceAddHandler := connect.NewUnaryHandlerSimple(
+	calculateServiceAddHandler := connect.NewUnaryHandler(
 		CalculateServiceAddProcedure,
 		svc.Add,
 		connect.WithSchema(calculateServiceMethods.ByName("Add")),
@@ -111,13 +107,13 @@ func NewCalculateServiceHandler(svc CalculateServiceHandler, opts ...connect.Han
 // UnimplementedCalculateServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedCalculateServiceHandler struct{}
 
-func (UnimplementedCalculateServiceHandler) Add(context.Context, *gen.AddRequest) (*gen.AddResponse, error) {
+func (UnimplementedCalculateServiceHandler) Add(context.Context, *connect.Request[gen.AddRequest]) (*connect.Response[gen.AddResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mainpb.CalculateService.Add is not implemented"))
 }
 
 // GreeterServiceClient is a client for the mainpb.GreeterService service.
 type GreeterServiceClient interface {
-	Greet(context.Context, *gen.GreetRequest) (*gen.GreetResponse, error)
+	Greet(context.Context, *connect.Request[gen.GreetRequest]) (*connect.Response[gen.GreetResponse], error)
 }
 
 // NewGreeterServiceClient constructs a client for the mainpb.GreeterService service. By default, it
@@ -146,17 +142,13 @@ type greeterServiceClient struct {
 }
 
 // Greet calls mainpb.GreeterService.Greet.
-func (c *greeterServiceClient) Greet(ctx context.Context, req *gen.GreetRequest) (*gen.GreetResponse, error) {
-	response, err := c.greet.CallUnary(ctx, connect.NewRequest(req))
-	if response != nil {
-		return response.Msg, err
-	}
-	return nil, err
+func (c *greeterServiceClient) Greet(ctx context.Context, req *connect.Request[gen.GreetRequest]) (*connect.Response[gen.GreetResponse], error) {
+	return c.greet.CallUnary(ctx, req)
 }
 
 // GreeterServiceHandler is an implementation of the mainpb.GreeterService service.
 type GreeterServiceHandler interface {
-	Greet(context.Context, *gen.GreetRequest) (*gen.GreetResponse, error)
+	Greet(context.Context, *connect.Request[gen.GreetRequest]) (*connect.Response[gen.GreetResponse], error)
 }
 
 // NewGreeterServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -166,7 +158,7 @@ type GreeterServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewGreeterServiceHandler(svc GreeterServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	greeterServiceMethods := gen.File_main_proto.Services().ByName("GreeterService").Methods()
-	greeterServiceGreetHandler := connect.NewUnaryHandlerSimple(
+	greeterServiceGreetHandler := connect.NewUnaryHandler(
 		GreeterServiceGreetProcedure,
 		svc.Greet,
 		connect.WithSchema(greeterServiceMethods.ByName("Greet")),
@@ -185,6 +177,6 @@ func NewGreeterServiceHandler(svc GreeterServiceHandler, opts ...connect.Handler
 // UnimplementedGreeterServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedGreeterServiceHandler struct{}
 
-func (UnimplementedGreeterServiceHandler) Greet(context.Context, *gen.GreetRequest) (*gen.GreetResponse, error) {
+func (UnimplementedGreeterServiceHandler) Greet(context.Context, *connect.Request[gen.GreetRequest]) (*connect.Response[gen.GreetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mainpb.GreeterService.Greet is not implemented"))
 }
