@@ -1,8 +1,6 @@
 ---
 description: "Help mentor the engineer by providing guidance and support."
 name: "Mentor mode"
-tools:
-  ["search/codebase", "web/fetch", "web/githubRepo", "search", "search/usages"]
 ---
 
 # Mentor mode instructions
