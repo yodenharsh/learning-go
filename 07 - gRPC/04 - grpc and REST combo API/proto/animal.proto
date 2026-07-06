@@ -1,0 +1,23 @@
+edition = "2024";
+
+package comboapi;
+
+message GetAnimalCryRequest {
+  AnimalType animal_type = 1;
+  uint32 count = 2;
+}
+
+message GetAnimalCryResponse {
+  string response = 1;
+}
+
+enum AnimalType {
+  ANIMAL_TYPE_UNSPECIFIED = 0;
+  ANIMAL_TYPE_DOG = 1;
+  ANIMAL_TYPE_CAT = 2;
+  ANIMAL_TYPE_DRAGON = 3;
+}
+
+service AnimalService {
+  rpc GetAnimalCry(GetAnimalCryRequest) returns (GetAnimalCryResponse);
+}
